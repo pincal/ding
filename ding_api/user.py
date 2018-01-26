@@ -155,7 +155,7 @@ def update_user(access_token, userid, name, department=None, mobile=None, email=
     
 #kw为需要更新的人的信息，只需要传入需要修改的部分。例如：
 #update_user_kw(access_token, u'135680', u'测试',email=u'test@test.com',position=u'职位3')
-def update_user(access_token, userid, name, **kw):
+def update_user_kw(access_token, userid, name, **kw):
     url = 'https://%s/user/update?' % API_ADDR
     args = {
         'access_token': access_token
