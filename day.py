@@ -14,7 +14,7 @@ def day_task():
         break
         # print data
         # 对比数据
-        # c
+        c
         # time.sleep(1)
 
-day_task()
+# day_task()

@@ -6,7 +6,7 @@
 import MySQLdb
 import ConfigParser
 
-# 检查本地环境
+'''检查本地环境'''
 def check():
     conf = ConfigParser.ConfigParser()
     conf.read('config.ini')
@@ -29,7 +29,12 @@ def check():
         print 'local database has not been created!'
         return False
 
-# 取本地/门户数据
+'''
+    description：取本地/门户数据
+    params:
+        source:数据来源,string类型,'oa'或者'local'
+        data_type:要取的数据类型,string,'all'、'num'或者'verify'
+'''
 def get_data(source, data_type):
     if(source == 'local'):
         config_item = 'local_database'
@@ -63,11 +68,18 @@ def get_data(source, data_type):
         print "get num of " + source + " success!"
         print num
         return num
+    elif(data_type == 'verify'):
+        # cur.execute('select * from GROUPINFO;')
+        # num = cur.fetchall()
+        print "get verify data of " + source + " success!"
+        # print num
+        # return num
     else:
         print "param error!"
 
-# 数据整理
+'''数据整理'''
 def data_processing(data):
     print 'pro!'
     print data
     print type(data)
+    

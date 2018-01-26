@@ -5,5 +5,8 @@
 
 def week_task():
     print 'week'
-    # while(True):
+    while(True):
         # 取数据
+        
+
+        break
