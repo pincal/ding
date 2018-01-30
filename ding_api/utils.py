@@ -67,16 +67,14 @@ def http_download(url, media_file):
     return True, 'success'
 
 
-def handle_result(result):
-    """
-    return: 成功则返回True和结果，否则返回False和错误信息
-    """
+def handle_result(result):    
+    #成功则返回True和结果，否则返回False和错误信息并写入日志
     if result.get('errcode') == 0:
-        result.pop('errcode')
-        result.pop('errmsg')
+        result.pop('errcode')   #删除成功时的固定状态信息errcode=0
+        result.pop('errmsg')    #删除成功时的固定状态信息errmsg=ok
         return True, result
     else:
         errcode = result.get('errcode')
         errmsg = result.get('errmsg')
-        logger.error("Error: %s | %s", errcode, errmsg)
-        return False, errmsg
+        logger.error("Error: %s | %s" % (errcode, errmsg))
+        return False, errmsg       

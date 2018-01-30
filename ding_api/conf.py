@@ -2,6 +2,6 @@
 # encoding: utf-8
 
 CorpID = ""
-secret = ""
+Secret = ""
 
 API_ADDR = "oapi.dingtalk.com"

@@ -7,10 +7,12 @@ from config import API_ADDR
 from utils import http_post
 
 
-def send(access_token, touser, toparty, send_type, content, agentid=3873399):
+def send(access_token, touser, toparty, send_type, content, agentid):
     """
-    params:
-        content: send_type对应的content，是一个字典，具体type的字段属性看文档
+    参数说明
+        send_type是一个string，可为text/image/voice/file/link/oa/markdown/action_card中之一
+        content是一个dict，最终由http_post函数中的json.dump封装为json格式
+        agentid是应用的id号
     """
     url = "https://%s/message/send?" % API_ADDR
     args = {
@@ -18,7 +20,6 @@ def send(access_token, touser, toparty, send_type, content, agentid=3873399):
     }
     url += urlencode(args)
     data = {
-        "access_token": access_token,
         "touser": touser,
         "toparty": toparty,
         "agentid": agentid,
