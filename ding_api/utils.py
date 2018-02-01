@@ -77,4 +77,5 @@ def handle_result(result):
         errcode = result.get('errcode')
         errmsg = result.get('errmsg')
         logger.error("Error: %s | %s" % (errcode, errmsg))
-        return False, errmsg       
+        #return False, errmsg
+        return False, {errcode:errmsg}
