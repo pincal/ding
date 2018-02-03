@@ -23,18 +23,14 @@ cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
 
 #初始化部门清单
 def store_department_list(fetch_child=True, parent_id=1):
+    #global result
     is_success, result = department.get_department_list(dingapi_timer.access_token, fetch_child, parent_id)
     #print result #debug only
     if is_success == True:
         for i in range(len(result['department'])):
-            ding_read_sql = "INSERT INTO dingding_department_list(id, \
-                        name, parentid, createDeptGroup, autoAddUser) \
-                        VALUES('%d', '%s', '%d', '%d', '%d')" % \
-                        (result['department'][i]['id'],
-                         result['department'][i]['name'],
-                         result['department'][i]['parentid'],
-                         result['department'][i]['createDeptGroup'],
-                         result['department'][i]['autoAddUser'])
+            ding_read_sql = "REPLACE INTO dingding_department_list(%s) VALUES(%s)" % \
+                        (utils.list2string(result['department'][i].keys(), 'keys'),
+                         utils.list2string(result['department'][i].values(), 'values') )
             #print ding_read_sql #debug only
             try:
                 cursor.execute(ding_read_sql)
@@ -51,27 +47,11 @@ def store_department_detail(department_id):
     is_success, result = department.get_department_detail(dingapi_timer.access_token, department_id)
     #print result #debug only
     if is_success == True and department_id != 1:  #id为1的为根部门，根部门钉钉不会返回parentid,在数据库中将根部门的parentid设置为0
-        ding_read_sql = "INSERT INTO dingding_department_detail(id, name, \
-                        parentid, orders, createDeptGroup, autoAddUser, deptHiding, \
-                        deptPermits, userPermits, outerDept, outerPermitDepts, \
-                        outerPermitUsers, orgDeptOwner, deptManagerUseridList) \
-                        VALUES('%d', '%s', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s')" % \
-                        (result['id'], result['name'], result['parentid'], result['order'],
-                         result['createDeptGroup'], result['autoAddUser'], result['deptHiding'],
-                         result['deptPerimits'], result['userPerimits'], result['outerDept'],
-                         result['outerPermitDepts'], result['outerPermitUsers'],
-                         result['orgDeptOwner'], result['deptManagerUseridList'])
+        ding_read_sql = "REPLACE INTO dingding_department_detail(%s) VALUES(%s)" % \
+                        (utils.list2string(result.keys(), 'keys'), utils.list2string(result.values(), 'values'))
     else:
-        ding_read_sql = "INSERT INTO dingding_department_detail(id, name, \
-                        parentid, orders, createDeptGroup, autoAddUser, deptHiding, \
-                        deptPermits, userPermits, outerDept, outerPermitDepts, \
-                        outerPermitUsers, orgDeptOwner, deptManagerUseridList) \
-                        VALUES('%d', '%s','%d', '%d', '%d', '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s')" % \
-                        (result['id'], result['name'],0, result['order'],
-                         result['createDeptGroup'], result['autoAddUser'], result['deptHiding'],
-                         result['deptPerimits'], result['userPerimits'], result['outerDept'],
-                         result['outerPermitDepts'], result['outerPermitUsers'],
-                         result['orgDeptOwner'], result['deptManagerUseridList'])        
+        ding_read_sql = "REPLACE INTO dingding_department_detail(%s, `parentid`) VALUES(%s, '0')" % \
+                        (utils.list2string(result.keys(), 'keys'), utils.list2string(result.values(), 'values'))      
 
     #print ding_read_sql #debug only
     try:
@@ -110,7 +90,7 @@ def store_user_list(department_id, offset=None, size=None, order=None):
             cursor.execute(check_db) #确保不会出现重复主键，当然也可以去直接写，捕获错误。
             db_result = cursor.fetchone()
             if db_result == None: #查询为空时返回NONE 
-                write_db = "INSERT INTO dingding_user_list(userid, name) VALUES('%s', '%s')" % \
+                write_db = "REPLACE INTO dingding_user_list(userid, name) VALUES('%s', '%s')" % \
                 (result['userlist'][i]['userid'], result['userlist'][i]['name'])
                 #print sql #debug only
                 try:
@@ -128,26 +108,10 @@ def store_user_list(department_id, offset=None, size=None, order=None):
 #获取用户详情           
 def store_user_detail(user_id): #钉钉有一些userid为0开始的，所以userid视为字符串
     is_success, result = user.get_user(dingapi_timer.access_token, user_id)
-    global result
+    #global result
     if is_success == True and result != None:
-##        write_db = "INSERT INTO dingding_user_detail(userid, orderInDepts, dingId, mobile, tel, \
-##                    workPlace, remark, isAdmin, isBoss, isHide, isLeaderInDepts, name, active, department, \
-##                    uposition, email, avatar, jobnumber) VALUES( \
-##                    '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', \
-##                    '%d', '%s', '%s', '%s', '%s', '%s')" % \
-##                    (result['userid'], result['orderInDepts'], result['dingId'], result['mobile'], result['tel']
-##                     , result['workPlace'], result['remark'], result['isAdmin'], result['isBoss'], result['isHide']
-##                     , result['isLeaderInDepts'], result['name'], result['active'], result['department'], result['position']
-##                     , result['email'], result['avatar'], result['jobnumber'])
-        write_db = "INSERT INTO dingding_user_detail(userid, orderInDepts, dingId, mobile, tel, \
-                    workPlace, remark, isAdmin, isBoss, isHide, isLeaderInDepts, name, active, department, \
-                    uposition, email, avatar) VALUES( \
-                    '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', \
-                    '%d', '%s', '%s', '%s', '%s')" % \
-                    (result['userid'], result['orderInDepts'], result['dingId'], result['mobile'], result['tel']
-                     , result['workPlace'], result['remark'], result['isAdmin'], result['isBoss'], result['isHide']
-                     , result['isLeaderInDepts'], result['name'], result['active'], result['department'], result['position']
-                     , result['email'], result['avatar'])        
+        write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
+                    (utils.list2string(result.keys(), 'keys'), utils.list2string(result.values(), 'values'))  
         #print write_db
         try:
             cursor.execute(write_db)
@@ -161,7 +125,7 @@ def store_user_detail(user_id): #钉钉有一些userid为0开始的，所以user
 
 
 def store_all_user_detail():
-    global db_result
+    #global db_result #debug only
     cursor.execute("SELECT id FROM dingding_department_detail")
     db_result = cursor.fetchall() #获取含根部门的所有部门id
     if db_result != None and len(db_result) > 0:
@@ -169,7 +133,7 @@ def store_all_user_detail():
             store_user_list(db_result[i][0])
 
     cursor.execute("SELECT userid FROM dingding_user_list")
-    db_result = cursor.fetchall() #获取含根部门的所有部门id
+    db_result = cursor.fetchall() #获取所有userid
     if db_result != None and len(db_result) > 0:
         for i in range(len(db_result)):
             store_user_detail(db_result[i][0])
@@ -190,6 +154,11 @@ def print_dict(result):
 #store_user_list('56590897')
 #store_user_detail('135665061528025280')
 #store_all_user_detail()
-#user_one_key_store()
+user_one_key_store()
+#store_department_list()
+#store_department_detail('1')
+
+
+        
 #断开数据库
 db.close()
