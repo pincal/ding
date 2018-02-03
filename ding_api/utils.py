@@ -78,4 +78,46 @@ def handle_result(result):
         errmsg = result.get('errmsg')
         logger.error("Error: %s | %s" % (errcode, errmsg))
         #return False, errmsg
-        return False, {errcode:errmsg}
+        return False, {errcode:errmsg} 
+        #API调用出错的时候，第二个返回值为一个dict
+        #key为错误代码，value为错误信息
+        
+
+        
+#一个把list处理为string作为sql语句的函数        
+def list2string(sqlist, types):
+    string=''
+    #type为keys表示键，values表示值。键加``值加""。
+    if types == 'keys': 
+        for i in range(len(sqlist)):
+            if i != len(sqlist)-1: #最后一个特殊处理
+                if type(sqlist[i]) == bool:
+                    string = string + '`%d`,' % sqlist[i]
+                elif type(sqlist[i]) == unicode:
+                    string = string + '`%s`,'% sqlist[i]
+                else:
+                    string = string + '`' + str(sqlist[i]) + '`, '
+            else:
+                if type(sqlist[i]) == bool:
+                    string = string + '`%d`' % sqlist[i]
+                elif type(sqlist[i]) == unicode:
+                    string = string + '`%s`'% sqlist[i]
+                else:
+                    string = string + '`' + str(sqlist[i]) + '`'        
+    else:
+        for i in range(len(sqlist)):
+            if i != len(sqlist)-1: #最后一个特殊处理
+                if type(sqlist[i]) == bool:
+                    string = string + '\"%d\",' % sqlist[i]
+                elif type(sqlist[i]) == unicode:
+                    string = string + '\"%s\",'% sqlist[i]
+                else:
+                    string = string + '\"' + str(sqlist[i]) + '\", '
+            else:
+                if type(sqlist[i]) == bool:
+                    string = string + '\"%d\"' % sqlist[i]
+                elif type(sqlist[i]) == unicode:
+                    string = string + '\"%s\"'% sqlist[i]
+                else:
+                    string = string + '\"' + str(sqlist[i]) + '\"' 
+    return string
