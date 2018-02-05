@@ -96,7 +96,7 @@ def list2string(sqlist, types):
                 elif type(sqlist[i]) == unicode:
                     string = string + '`%s`,'% sqlist[i]
                 else:
-                    string = string + '`' + str(sqlist[i]) + '`, '
+                    string = string + '`' + str(sqlist[i]) + '`,'
             else:
                 if type(sqlist[i]) == bool:
                     string = string + '`%d`' % sqlist[i]
@@ -104,20 +104,54 @@ def list2string(sqlist, types):
                     string = string + '`%s`'% sqlist[i]
                 else:
                     string = string + '`' + str(sqlist[i]) + '`'        
-    else:
+    elif types == 'values':
         for i in range(len(sqlist)):
             if i != len(sqlist)-1: #最后一个特殊处理
                 if type(sqlist[i]) == bool:
-                    string = string + '\"%d\",' % sqlist[i]
+                    string = string + '\'%d\',' % sqlist[i]
                 elif type(sqlist[i]) == unicode:
-                    string = string + '\"%s\",'% sqlist[i]
+                    string = string + '\'%s\','% sqlist[i]
+                elif type(sqlist[i]) == dict:
+                    string = string + '\'' + json.dumps(sqlist[i], ensure_ascii=False) + '\','
+                elif type(sqlist[i]) == list:
+                    string = string + '\'[' + list2string(sqlist[i], types='no_wrapper') + ']\','
                 else:
-                    string = string + '\"' + str(sqlist[i]) + '\", '
+                    string = string + '\'' + str(sqlist[i]) + '\', '
             else:
                 if type(sqlist[i]) == bool:
-                    string = string + '\"%d\"' % sqlist[i]
+                    string = string + '\'%d\'' % sqlist[i]
                 elif type(sqlist[i]) == unicode:
-                    string = string + '\"%s\"'% sqlist[i]
+                    string = string + '\'%s\''% sqlist[i]
+                elif type(sqlist[i]) == dict:
+                    string = string + '\'' + json.dumps(sqlist[i], ensure_ascii=False) + '\''
+                elif type(sqlist[i]) == list:
+                    string = string + '\'[' + list2string(sqlist[i], types='no_wrapper') + ']\''
                 else:
-                    string = string + '\"' + str(sqlist[i]) + '\"' 
+                    string = string + '\'' + str(sqlist[i]) + '\''
+    elif types == 'no_wrapper':
+        for i in range(len(sqlist)):
+            if i != len(sqlist)-1: #最后一个特殊处理
+                if type(sqlist[i]) == bool:
+                    string = string + '%d,' % sqlist[i]
+                elif type(sqlist[i]) == unicode:
+                    string = string + '%s,' % sqlist[i]
+                elif type(sqlist[i]) == dict:
+                    string = string + json.dumps(sqlist[i], ensure_ascii=False) + ','
+                elif type(sqlist[i]) == list:
+                    string = string + list2string(sqlist[i], types='no_wrapper') + ','
+                else:
+                    string = string + str(sqlist[i]) + ','
+            else:
+                if type(sqlist[i]) == bool:
+                    string = string + '%d' % sqlist[i]
+                elif type(sqlist[i]) == unicode:
+                    string = string + '%s'% sqlist[i]
+                elif type(sqlist[i]) == dict:
+                    string = string + json.dumps(sqlist[i], ensure_ascii=False)
+                elif type(sqlist[i]) == list:
+                    string = string + list2string(sqlist[i], types='no_wrapper')
+                else:
+                    string = string + str(sqlist[i])
+    else:
+        string = string + ''
     return string
