@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-05 06:25:55
+-- Generation Time: 2018-02-05 08:11:01
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -26,7 +26,54 @@ USE `dingtalk`;
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `ding_oa_department`
+--
+-- 创建时间： 2018-02-05 08:09:09
+--
+
+DROP TABLE IF EXISTS `ding_oa_department`;
+CREATE TABLE `ding_oa_department` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `ding_dept_id` varchar(45) NOT NULL COMMENT 'ding中估计为不以0起始的数字',
+  `ding_dept_name` varchar(45) NOT NULL,
+  `oa_org_id` varchar(45) NOT NULL COMMENT 'oa中为0起始的数字',
+  `oa_org_shortname` varchar(45) NOT NULL,
+  `oa_org_name` varchar(500) NOT NULL,
+  `oa_org_update` tinyint(1) NOT NULL DEFAULT '0',
+  `ding_dept_update` tinyint(1) NOT NULL DEFAULT '0',
+  `oa_update_time` datetime DEFAULT NULL,
+  `ding_update_time` datetime DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `ding_oa_user`
+--
+-- 创建时间： 2018-02-05 08:00:34
+--
+
+DROP TABLE IF EXISTS `ding_oa_user`;
+CREATE TABLE `ding_oa_user` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `ding_user_id` varchar(45) NOT NULL COMMENT 'ding中部分人为0起始的数字',
+  `email` varchar(45) NOT NULL,
+  `oa_user_id` varchar(45) NOT NULL COMMENT 'oa中为字符串',
+  `oa_user_update` tinyint(1) NOT NULL DEFAULT '0',
+  `ding_user_update` tinyint(1) NOT NULL DEFAULT '0',
+  `oa_update_time` datetime DEFAULT NULL,
+  `ding_update_time` datetime DEFAULT NULL,
+  `last_update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `dingding_department_detail`
+--
+-- 创建时间： 2018-02-05 06:28:57
+-- 最后更新： 2018-02-05 06:43:08
 --
 
 DROP TABLE IF EXISTS `dingding_department_detail`;
@@ -54,6 +101,9 @@ CREATE TABLE `dingding_department_detail` (
 --
 -- 表的结构 `dingding_department_list`
 --
+-- 创建时间： 2018-02-05 06:28:57
+-- 最后更新： 2018-02-05 06:42:39
+--
 
 DROP TABLE IF EXISTS `dingding_department_list`;
 CREATE TABLE `dingding_department_list` (
@@ -69,6 +119,9 @@ CREATE TABLE `dingding_department_list` (
 
 --
 -- 表的结构 `dingding_user_detail`
+--
+-- 创建时间： 2018-02-05 06:28:57
+-- 最后更新： 2018-02-05 06:47:10
 --
 
 DROP TABLE IF EXISTS `dingding_user_detail`;
@@ -107,6 +160,9 @@ CREATE TABLE `dingding_user_detail` (
 --
 -- 表的结构 `dingding_user_list`
 --
+-- 创建时间： 2018-02-05 06:28:57
+-- 最后更新： 2018-02-05 06:43:28
+--
 
 DROP TABLE IF EXISTS `dingding_user_list`;
 CREATE TABLE `dingding_user_list` (
@@ -118,6 +174,18 @@ CREATE TABLE `dingding_user_list` (
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `ding_oa_department`
+--
+ALTER TABLE `ding_oa_department`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `ding_oa_user`
+--
+ALTER TABLE `ding_oa_user`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `dingding_department_detail`
@@ -143,6 +211,20 @@ ALTER TABLE `dingding_user_detail`
 ALTER TABLE `dingding_user_list`
   ADD PRIMARY KEY (`userid`);
 
+--
+-- 在导出的表使用AUTO_INCREMENT
+--
+
+--
+-- 使用表AUTO_INCREMENT `ding_oa_department`
+--
+ALTER TABLE `ding_oa_department`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+--
+-- 使用表AUTO_INCREMENT `ding_oa_user`
+--
+ALTER TABLE `ding_oa_user`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
