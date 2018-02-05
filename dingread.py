@@ -11,7 +11,7 @@ import MySQLdb
 dingapi_timer.access_token_timer()
 
 #连接数据库
-db = MySQLdb.connect('localhost','root','yoyoball','test')
+db = MySQLdb.connect('localhost','root','yoyoball','dingtalk')
 db.set_character_set('utf8') #修改MySQLdb默认编码
 cursor= db.cursor()
 cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
@@ -152,12 +152,9 @@ def print_dict(result):
     for k, v in result.iteritems():
         print '%s : %s' % (k, v)       
     
-#store_user_list('56590897')
-#store_user_detail('135665061528025280')
-#store_all_user_detail()
-user_one_key_store()
-#store_department_list()
-#store_department_detail('1')
+#debug only
+#本函数完成一键存储和刷新钉钉侧的用户详情和组织详情
+#user_one_key_store()
 
 
         

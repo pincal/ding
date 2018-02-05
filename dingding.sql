@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-05 05:40:47
+-- Generation Time: 2018-02-05 06:25:55
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -17,11 +17,11 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `test`
+-- Database: `dingtalk`
 --
-DROP DATABASE IF EXISTS `test`;
-CREATE DATABASE IF NOT EXISTS `test` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-USE `test`;
+DROP DATABASE IF EXISTS `dingtalk`;
+CREATE DATABASE IF NOT EXISTS `dingtalk` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `dingtalk`;
 
 -- --------------------------------------------------------
 
@@ -82,7 +82,7 @@ CREATE TABLE `dingding_user_detail` (
   `email` varchar(45) DEFAULT NULL,
   `orgEmail` varchar(45) DEFAULT NULL,
   `active` tinyint(1) NOT NULL,
-  `orderInDepts` varchar(45) DEFAULT NULL,
+  `orderInDepts` varchar(145) DEFAULT NULL,
   `isAdmin` tinyint(1) NOT NULL,
   `isBoss` tinyint(1) NOT NULL,
   `dingId` varchar(45) DEFAULT NULL,
