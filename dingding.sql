@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-05 08:11:01
+-- Generation Time: 2018-02-05 09:10:08
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -28,8 +28,6 @@ USE `dingtalk`;
 --
 -- 表的结构 `ding_oa_department`
 --
--- 创建时间： 2018-02-05 08:09:09
---
 
 DROP TABLE IF EXISTS `ding_oa_department`;
 CREATE TABLE `ding_oa_department` (
@@ -51,8 +49,6 @@ CREATE TABLE `ding_oa_department` (
 --
 -- 表的结构 `ding_oa_user`
 --
--- 创建时间： 2018-02-05 08:00:34
---
 
 DROP TABLE IF EXISTS `ding_oa_user`;
 CREATE TABLE `ding_oa_user` (
@@ -72,13 +68,10 @@ CREATE TABLE `ding_oa_user` (
 --
 -- 表的结构 `dingding_department_detail`
 --
--- 创建时间： 2018-02-05 06:28:57
--- 最后更新： 2018-02-05 06:43:08
---
 
 DROP TABLE IF EXISTS `dingding_department_detail`;
 CREATE TABLE `dingding_department_detail` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` varchar(45) NOT NULL,
   `name` varchar(45) NOT NULL,
   `parentid` int(10) UNSIGNED NOT NULL,
   `order` int(10) UNSIGNED DEFAULT NULL,
@@ -101,13 +94,10 @@ CREATE TABLE `dingding_department_detail` (
 --
 -- 表的结构 `dingding_department_list`
 --
--- 创建时间： 2018-02-05 06:28:57
--- 最后更新： 2018-02-05 06:42:39
---
 
 DROP TABLE IF EXISTS `dingding_department_list`;
 CREATE TABLE `dingding_department_list` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` varchar(45) NOT NULL,
   `name` varchar(45) NOT NULL,
   `parentid` int(10) UNSIGNED DEFAULT NULL,
   `createDeptGroup` tinyint(1) DEFAULT NULL,
@@ -119,9 +109,6 @@ CREATE TABLE `dingding_department_list` (
 
 --
 -- 表的结构 `dingding_user_detail`
---
--- 创建时间： 2018-02-05 06:28:57
--- 最后更新： 2018-02-05 06:47:10
 --
 
 DROP TABLE IF EXISTS `dingding_user_detail`;
@@ -159,9 +146,6 @@ CREATE TABLE `dingding_user_detail` (
 
 --
 -- 表的结构 `dingding_user_list`
---
--- 创建时间： 2018-02-05 06:28:57
--- 最后更新： 2018-02-05 06:43:28
 --
 
 DROP TABLE IF EXISTS `dingding_user_list`;
