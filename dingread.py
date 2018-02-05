@@ -109,6 +109,7 @@ def store_user_list(department_id, offset=None, size=None, order=None):
 def store_user_detail(user_id): #钉钉有一些userid为0开始的，所以userid视为字符串
     is_success, result = user.get_user(dingapi_timer.access_token, user_id)
     #global result
+    #print result
     if is_success == True and result != None:
         write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
                     (utils.list2string(result.keys(), 'keys'), utils.list2string(result.values(), 'values'))  
