@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-05 09:10:08
+-- Generation Time: 2018-02-06 02:33:30
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -28,6 +28,8 @@ USE `dingtalk`;
 --
 -- 表的结构 `ding_oa_department`
 --
+-- 创建时间： 2018-02-05 08:09:09
+--
 
 DROP TABLE IF EXISTS `ding_oa_department`;
 CREATE TABLE `ding_oa_department` (
@@ -49,6 +51,8 @@ CREATE TABLE `ding_oa_department` (
 --
 -- 表的结构 `ding_oa_user`
 --
+-- 创建时间： 2018-02-05 08:00:34
+--
 
 DROP TABLE IF EXISTS `ding_oa_user`;
 CREATE TABLE `ding_oa_user` (
@@ -68,12 +72,15 @@ CREATE TABLE `ding_oa_user` (
 --
 -- 表的结构 `dingding_department_detail`
 --
+-- 创建时间： 2018-02-05 06:28:57
+-- 最后更新： 2018-02-06 02:32:11
+--
 
 DROP TABLE IF EXISTS `dingding_department_detail`;
 CREATE TABLE `dingding_department_detail` (
   `id` varchar(45) NOT NULL,
   `name` varchar(45) NOT NULL,
-  `parentid` int(10) UNSIGNED NOT NULL,
+  `parentid` varchar(45) NOT NULL,
   `order` int(10) UNSIGNED DEFAULT NULL,
   `createDeptGroup` tinyint(1) NOT NULL,
   `autoAddUser` tinyint(1) NOT NULL,
@@ -94,6 +101,8 @@ CREATE TABLE `dingding_department_detail` (
 --
 -- 表的结构 `dingding_department_list`
 --
+-- 创建时间： 2018-02-05 06:28:57
+--
 
 DROP TABLE IF EXISTS `dingding_department_list`;
 CREATE TABLE `dingding_department_list` (
@@ -109,6 +118,8 @@ CREATE TABLE `dingding_department_list` (
 
 --
 -- 表的结构 `dingding_user_detail`
+--
+-- 创建时间： 2018-02-05 06:28:57
 --
 
 DROP TABLE IF EXISTS `dingding_user_detail`;
@@ -147,12 +158,32 @@ CREATE TABLE `dingding_user_detail` (
 --
 -- 表的结构 `dingding_user_list`
 --
+-- 创建时间： 2018-02-05 06:28:57
+--
 
 DROP TABLE IF EXISTS `dingding_user_list`;
 CREATE TABLE `dingding_user_list` (
   `userid` varchar(45) NOT NULL COMMENT '有0开头的userid',
   `name` varchar(45) NOT NULL,
   `syn_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `syn_log`
+--
+-- 创建时间： 2018-02-05 09:26:24
+--
+
+DROP TABLE IF EXISTS `syn_log`;
+CREATE TABLE `syn_log` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `oa_old` text,
+  `oa_new` text,
+  `ding_old` text,
+  `ding_new` text,
+  `syn_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
@@ -194,6 +225,12 @@ ALTER TABLE `dingding_user_detail`
 --
 ALTER TABLE `dingding_user_list`
   ADD PRIMARY KEY (`userid`);
+
+--
+-- Indexes for table `syn_log`
+--
+ALTER TABLE `syn_log`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- 在导出的表使用AUTO_INCREMENT
