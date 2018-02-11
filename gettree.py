@@ -78,6 +78,7 @@ def create_oa_tree():
     return oa_tree
 
 
+
 #手动指定对等部门进行搜索测试，仅作保留，不要调用
 def find_peers_test():
     #global si_ding_tree, si_oa_tree, oa_result, ding_result #debug only
@@ -152,8 +153,10 @@ def get_hierarchy(trees):
 
 
 
-def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, level, oa_org_id, oa_hierarchy, ding_hierarchy):
-    global oa_result, oa_parent_id #debug only
+def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, level, oa_org_id, oa_hierarchy, ding_hierarchy, operater):
+    #global oa_result, oa_parent_id #debug only
+    method_a_counter = 0
+    method_b_counter = 0
     oa_parent_id = oa_tree.parent(oa_org_id).identifier
     if oa_parent_id == None:
         return -1 #树中没有上级节点【不应该出现这个错误】
@@ -176,15 +179,24 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
             ding_result = ding_cursor.fetchone()
             #print ding_result
             if ding_result[0] == oa_result[0]:
-                #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
-                peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
-                            `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
-                            `status`) VALUES('%s', '%s', '%s', '%s', 1)" % \
-                            (ding_hierarchy[level][i], ding_result[0], \
-                            oa_org_id, oa_result[0])
-                #print peer_sql #debug only
-                ding_cursor.execute(peer_sql)
-                ding_db.commit()
+                method_a_counter = method_a_counter + 1
+                if method_a_counter == 1:
+                    #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
+                    peer_sql = "%s INTO ding_oa_department(`ding_dept_id`, \
+                                `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
+                                `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '2', '%s')" % \
+                                (operater, ding_hierarchy[level][i], ding_result[0], \
+                                oa_org_id, oa_result[0], method_a_counter)
+                    #print peer_sql #debug only
+                    ding_cursor.execute(peer_sql)
+                    ding_db.commit()
+                else:
+                    peer_sql = "UPDATE ding_oa_department SET `matches`='%s' WHERE `oa_org_id`='%s'" % \
+                                (method_a_counter, oa_org_id)
+                    #print peer_sql #debug only
+                    ding_cursor.execute(peer_sql)
+                    ding_db.commit()
+
     else: #能查到oa上级部门对应的钉钉部门则缩小查找范围
         #print ding_parent_id[0] #debug only
         oa_sql = "SELECT `shortname` from groupinfo WHERE `orgid`='%s'" % oa_org_id
@@ -201,21 +213,44 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
             ding_result = ding_cursor.fetchone()
             #print ding_result
             if ding_result[0] == oa_result[0]:
-                #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
-                peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
-                            `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
-                            `status`) VALUES('%s', '%s', '%s', '%s', 2)" % \
-                            (ding_tree_branch[i], ding_result[0], \
-                            oa_org_id, oa_result[0])
-                #print peer_sql #debug only
-                ding_cursor.execute(peer_sql)
-                ding_db.commit()
-        
+                method_b_counter = method_b_counter + 1
+                if method_b_counter == 1:
+                    #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
+                    peer_sql = "%s INTO ding_oa_department(`ding_dept_id`, \
+                                `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
+                                `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '3', '%s')" % \
+                                (operater, ding_tree_branch[i], ding_result[0], \
+                                oa_org_id, oa_result[0], method_b_counter)
+                    #print peer_sql #debug only
+                    ding_cursor.execute(peer_sql)
+                    ding_db.commit()
+                else:
+                    peer_sql = "UPDATE ding_oa_department SET `matches`='%s' WHERE `oa_org_id`='%s'" % \
+                                (method_b_counter, oa_org_id)
+                    #print peer_sql #debug only
+                    ding_cursor.execute(peer_sql)
+                    ding_db.commit()                    
+
+
+
+def check_peers(ding_cursor, oa_org_id):
+    sql = "SELECT `find_method` FROM ding_oa_department WHERE `oa_org_id`='%s'" % oa_org_id
+    ding_cursor.execute(sql)
+    result = ding_cursor.fetchone()
+    #print result #debug only
+    if result == None: #查不到记录初始化
+        return 0
+    elif result[0] != 127: #有自动设置对应关系则更新  
+        return 1
+    else: #其他情况忽略
+        return -1
+
+
 
 
             
 def find_peers():
-    global ding_tree, oa_tree, oa_hierarchy, ding_hierarchy ,counterA, counterB #debug only
+    #global ding_tree, oa_tree, oa_hierarchy, ding_hierarchy ,counterA, counterB #debug only
     #counterA = 0 #debug only
     #counterB = 0 #debug only
     #连接两侧数据库
@@ -235,16 +270,25 @@ def find_peers():
     #以oa侧为基准相同层级的元素进行对比
     for i in range(len(oa_hierarchy)): #i为第几层级，j为该层级下的第几个组织
         for j in range(len(oa_hierarchy[i])):
+            #print oa_hierarchy[i][j] #debug only
+            #print i,j
             if i != 0: #只要不是虚拟根就进行对比
-                #print oa_hierarchy[i][j], oa_tree.level(oa_hierarchy[i][j])
+                #print oa_hierarchy[i][j], oa_tree.level(oa_hierarchy[i][j]) #debug only
                 #counterA = counterA + 1 #debug only
-                find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, i, oa_hierarchy[i][j], oa_hierarchy, ding_hierarchy)
+                #验证数据库中是否存在，不存在的初始化，存在的刷新。如果存在且find_method=127则不更新。
+                check_result = check_peers(ding_cursor, oa_hierarchy[i][j])
+                if check_result == 0: #没有对应关系则初始化
+                    find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, i, oa_hierarchy[i][j], oa_hierarchy, ding_hierarchy, 'INSERT')
+                elif check_result == 1: #有对应关系则更新
+                    find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, i, oa_hierarchy[i][j], oa_hierarchy, ding_hierarchy, 'REPLACE')
+                #else: #异常情况跳过
+                #    continue
                 #break #debug only
             else: #虚拟根手动设置
                 #counterB = counterB + 1 #debug only
                 peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
-                        `ding_dept_name`, `oa_org_id`, `oa_org_shortname` \
-                        ) VALUES('%s', '%s', '%s', '%s')" % \
+                        `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
+                        `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '1', '1')" % \
                         ('0', ding_tree.get_node('0').tag, '0', oa_tree.get_node('0').tag)
             #print peer_sql #debug only
             ding_cursor.execute(peer_sql)
@@ -264,11 +308,11 @@ def find_peers():
 '''测试部分'''
 
 #展示树形图  debug only
-#create_ding_tree().show()
-#create_oa_tree().show()
+#dingtree=create_ding_tree()
+#oatree=create_oa_tree()
 
 #查找组织对应关系
-find_peers()
+#find_peers()
 
 '''遗留问题'''
 #1未作错误处理
