@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-06 02:33:30
+-- Generation Time: 2018-02-11 10:07:21
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -28,21 +28,22 @@ USE `dingtalk`;
 --
 -- 表的结构 `ding_oa_department`
 --
--- 创建时间： 2018-02-05 08:09:09
---
 
 DROP TABLE IF EXISTS `ding_oa_department`;
 CREATE TABLE `ding_oa_department` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(50) UNSIGNED NOT NULL,
   `ding_dept_id` varchar(45) NOT NULL COMMENT 'ding中估计为不以0起始的数字',
-  `ding_dept_name` varchar(45) NOT NULL,
-  `oa_org_id` varchar(45) NOT NULL COMMENT 'oa中为0起始的数字',
-  `oa_org_shortname` varchar(45) NOT NULL,
-  `oa_org_name` varchar(500) NOT NULL,
-  `oa_org_update` tinyint(1) NOT NULL DEFAULT '0',
-  `ding_dept_update` tinyint(1) NOT NULL DEFAULT '0',
-  `oa_update_time` datetime DEFAULT NULL,
-  `ding_update_time` datetime DEFAULT NULL,
+  `ding_dept_name` varchar(45) NOT NULL COMMENT '钉钉部门名称',
+  `oa_org_id` varchar(50) NOT NULL COMMENT 'oa中为0起始的数字',
+  `oa_org_shortname` varchar(150) NOT NULL COMMENT 'oa部门名称',
+  `oa_org_name` varchar(150) DEFAULT NULL COMMENT '暂不使用',
+  `oa_org_update` tinyint(4) NOT NULL DEFAULT '0' COMMENT '-1错误，0无须更新，1已经更新',
+  `ding_dept_update` tinyint(4) NOT NULL DEFAULT '0' COMMENT '-1错误，0无须更新，1已经更新',
+  `syn_status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '同步状态',
+  `find_method` tinyint(4) NOT NULL DEFAULT '0' COMMENT '查找方法：1程序硬编码，2同级别全比对，3相同上级全比对，127手工设置程序忽略',
+  `matches` tinyint(4) NOT NULL DEFAULT '0' COMMENT '单条OA数据与钉钉侧数据的匹配次数，不是1的一定是错误行',
+  `oa_update_time` datetime DEFAULT NULL COMMENT '如果oa_org_update=1设置这个时间',
+  `ding_update_time` datetime DEFAULT NULL COMMENT '如果ding_dept_update=1设置这个时间',
   `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -51,17 +52,17 @@ CREATE TABLE `ding_oa_department` (
 --
 -- 表的结构 `ding_oa_user`
 --
--- 创建时间： 2018-02-05 08:00:34
---
 
 DROP TABLE IF EXISTS `ding_oa_user`;
 CREATE TABLE `ding_oa_user` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `ding_user_id` varchar(45) NOT NULL COMMENT 'ding中部分人为0起始的数字',
-  `email` varchar(45) NOT NULL,
-  `oa_user_id` varchar(45) NOT NULL COMMENT 'oa中为字符串',
+  `id` int(50) UNSIGNED NOT NULL,
+  `ding_user_id` varchar(50) NOT NULL COMMENT 'ding中部分人为0起始的数字',
+  `email` varchar(50) NOT NULL,
+  `oa_user_id` varchar(50) NOT NULL COMMENT 'oa中为字符串',
+  `oa_ldap_user_id` varchar(50) NOT NULL,
   `oa_user_update` tinyint(1) NOT NULL DEFAULT '0',
   `ding_user_update` tinyint(1) NOT NULL DEFAULT '0',
+  `status` tinyint(1) NOT NULL,
   `oa_update_time` datetime DEFAULT NULL,
   `ding_update_time` datetime DEFAULT NULL,
   `last_update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -71,9 +72,6 @@ CREATE TABLE `ding_oa_user` (
 
 --
 -- 表的结构 `dingding_department_detail`
---
--- 创建时间： 2018-02-05 06:28:57
--- 最后更新： 2018-02-06 02:32:11
 --
 
 DROP TABLE IF EXISTS `dingding_department_detail`;
@@ -101,8 +99,6 @@ CREATE TABLE `dingding_department_detail` (
 --
 -- 表的结构 `dingding_department_list`
 --
--- 创建时间： 2018-02-05 06:28:57
---
 
 DROP TABLE IF EXISTS `dingding_department_list`;
 CREATE TABLE `dingding_department_list` (
@@ -118,8 +114,6 @@ CREATE TABLE `dingding_department_list` (
 
 --
 -- 表的结构 `dingding_user_detail`
---
--- 创建时间： 2018-02-05 06:28:57
 --
 
 DROP TABLE IF EXISTS `dingding_user_detail`;
@@ -158,8 +152,6 @@ CREATE TABLE `dingding_user_detail` (
 --
 -- 表的结构 `dingding_user_list`
 --
--- 创建时间： 2018-02-05 06:28:57
---
 
 DROP TABLE IF EXISTS `dingding_user_list`;
 CREATE TABLE `dingding_user_list` (
@@ -173,12 +165,10 @@ CREATE TABLE `dingding_user_list` (
 --
 -- 表的结构 `syn_log`
 --
--- 创建时间： 2018-02-05 09:26:24
---
 
 DROP TABLE IF EXISTS `syn_log`;
 CREATE TABLE `syn_log` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(50) UNSIGNED NOT NULL,
   `oa_old` text,
   `oa_new` text,
   `ding_old` text,
@@ -194,7 +184,8 @@ CREATE TABLE `syn_log` (
 -- Indexes for table `ding_oa_department`
 --
 ALTER TABLE `ding_oa_department`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `oa_org_id_UNIQUE` (`oa_org_id`);
 
 --
 -- Indexes for table `ding_oa_user`
@@ -240,12 +231,17 @@ ALTER TABLE `syn_log`
 -- 使用表AUTO_INCREMENT `ding_oa_department`
 --
 ALTER TABLE `ding_oa_department`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- 使用表AUTO_INCREMENT `ding_oa_user`
 --
 ALTER TABLE `ding_oa_user`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT;
+--
+-- 使用表AUTO_INCREMENT `syn_log`
+--
+ALTER TABLE `syn_log`
+  MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
