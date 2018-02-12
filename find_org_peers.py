@@ -40,7 +40,7 @@ def create_ding_tree():
             #ding_tree.create_node(dept_result[i][1].decode('utf-8'), dept_result[i][0], '0')
             ding_tree.create_node(dept_result[i][1], dept_result[i][0], '0')
         for i in range(len(dept_result)): #修改隶属关系
-            if dept_result[i][0] != '1' : #只要不是实根，就要修改隶属关系
+            if dept_result[i][0] != '1' : #只要不是实根，就要修改隶属关系【钉钉中实根id为'1'且无上级部门，数据表dingding_department_detail中存储id为'1'的部门上级为'0'】
                 if ding_tree.contains(dept_result[i][2]): #判断上级是否存在
                     ding_tree.move_node(dept_result[i][0], dept_result[i][2])
                 else: #没有上级的不修改
@@ -68,7 +68,7 @@ def create_oa_tree():
             #print dept_result[i][1].decode('utf-8'), dept_result[i][0], dept_result[i][2]
             oa_tree.create_node(dept_result[i][1], dept_result[i][0], '0')
         for i in range(len(dept_result)): #修改隶属关系
-            if dept_result[i][0] != '001000' : #只要不是实根，就要修改隶属关系
+            if dept_result[i][0] != 'XXXX' : #只要不是实根，就要修改隶属关系【OA中'001000'等的组织上级为‘0000’即OA数据库中存在虚根，所以无需做此步骤】
                 if oa_tree.contains(dept_result[i][2]): #判断上级是否存在
                     oa_tree.move_node(dept_result[i][0], dept_result[i][2])
                 else: #没有上级的不修改
@@ -79,62 +79,62 @@ def create_oa_tree():
 
 
 
-#手动指定对等部门进行搜索测试，仅作保留，不要调用
-def find_peers_test():
-    #global si_ding_tree, si_oa_tree, oa_result, ding_result #debug only
-    #连接两侧数据库
-    ding_db = MySQLdb.connect('localhost','root','yoyoball','dingtalk')
-    ding_db.set_character_set('utf8') #修改MySQLdb默认编码
-    ding_cursor = ding_db.cursor()
-    ding_cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
-    ding_cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
-    ding_cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
-
-    oa_db = MySQLdb.connect('localhost','root','yoyoball','np020')
-    oa_db.set_character_set('utf8') #修改MySQLdb默认编码
-    oa_cursor = oa_db.cursor()
-    oa_cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
-    oa_cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
-    oa_cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
-    
-    #首先获取树形图
-    ding_tree = create_ding_tree()
-    oa_tree = create_oa_tree()
-    #测试环境 debug only
-    si_ding_tree = ding_tree.subtree('1')
-    si_oa_tree = oa_tree.subtree('006953')
-    si_ding_tree.show()
-    si_oa_tree.show()
-    #获取oa根的所有直接下属,对oa每一个下属与ding侧相同级别进行名称比较
-    oa_orgs = si_oa_tree.is_branch('006953')
-    ding_depts = si_ding_tree.is_branch('1')
-    
-    for i in range(len(oa_orgs)):
-        oa_sql = "SELECT `shortname` from groupinfo WHERE `orgid`= '%s'" % oa_orgs[i]
-        #print oa_sql #debug only
-        oa_cursor.execute(oa_sql)
-        oa_result = oa_cursor.fetchone() #得到oa侧的组织名oa_result[0]
-        #print oa_result #debug only
-        for j in range(len(ding_depts)):
-            ding_sql = "SELECT `name` FROM dingding_department_detail WHERE `id`='%s'" % ding_depts[j]
-            #print ding_sql
-            ding_cursor.execute(ding_sql)
-            ding_result = ding_cursor.fetchone()
-            #print ding_result
-            if ding_result[0] == oa_result[0]:
-                #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_depts[j], ding_result[0].decode('utf-8'), oa_orgs[i], oa_result[0].decode('utf-8')) #debug only
-                peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
-                            `ding_dept_name`, `oa_org_id`, `oa_org_shortname` \
-                            ) VALUES('%s', '%s', '%s', '%s')" % \
-                            (ding_depts[j], ding_result[0], \
-                            oa_orgs[i], oa_result[0])
-                #print peer_sql #debug only
-                ding_cursor.execute(peer_sql)
-                ding_db.commit()
-           
-    #关闭数据库
-    ding_db.close()
-    oa_db.close()
+###手动指定对等部门进行搜索测试，仅作保留，不要调用
+##def find_peers_test():
+##    #global si_ding_tree, si_oa_tree, oa_result, ding_result #debug only
+##    #连接两侧数据库
+##    ding_db = MySQLdb.connect('localhost','root','yoyoball','dingtalk')
+##    ding_db.set_character_set('utf8') #修改MySQLdb默认编码
+##    ding_cursor = ding_db.cursor()
+##    ding_cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
+##    ding_cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
+##    ding_cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
+##
+##    oa_db = MySQLdb.connect('localhost','root','yoyoball','np020')
+##    oa_db.set_character_set('utf8') #修改MySQLdb默认编码
+##    oa_cursor = oa_db.cursor()
+##    oa_cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
+##    oa_cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
+##    oa_cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
+##    
+##    #首先获取树形图
+##    ding_tree = create_ding_tree()
+##    oa_tree = create_oa_tree()
+##    #测试环境 debug only
+##    si_ding_tree = ding_tree.subtree('1')
+##    si_oa_tree = oa_tree.subtree('006953')
+##    si_ding_tree.show()
+##    si_oa_tree.show()
+##    #获取oa根的所有直接下属,对oa每一个下属与ding侧相同级别进行名称比较
+##    oa_orgs = si_oa_tree.is_branch('006953')
+##    ding_depts = si_ding_tree.is_branch('1')
+##    
+##    for i in range(len(oa_orgs)):
+##        oa_sql = "SELECT `shortname` from groupinfo WHERE `orgid`= '%s'" % oa_orgs[i]
+##        #print oa_sql #debug only
+##        oa_cursor.execute(oa_sql)
+##        oa_result = oa_cursor.fetchone() #得到oa侧的组织名oa_result[0]
+##        #print oa_result #debug only
+##        for j in range(len(ding_depts)):
+##            ding_sql = "SELECT `name` FROM dingding_department_detail WHERE `id`='%s'" % ding_depts[j]
+##            #print ding_sql
+##            ding_cursor.execute(ding_sql)
+##            ding_result = ding_cursor.fetchone()
+##            #print ding_result
+##            if ding_result[0] == oa_result[0]:
+##                #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_depts[j], ding_result[0].decode('utf-8'), oa_orgs[i], oa_result[0].decode('utf-8')) #debug only
+##                peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
+##                            `ding_dept_name`, `oa_org_id`, `oa_org_shortname` \
+##                            ) VALUES('%s', '%s', '%s', '%s')" % \
+##                            (ding_depts[j], ding_result[0], \
+##                            oa_orgs[i], oa_result[0])
+##                #print peer_sql #debug only
+##                ding_cursor.execute(peer_sql)
+##                ding_db.commit()
+##           
+##    #关闭数据库
+##    ding_db.close()
+##    oa_db.close()
 
 
 def get_nodes_at_level(trees, level):
@@ -153,25 +153,42 @@ def get_hierarchy(trees):
 
 
 
+def zero_peers(ding_db, ding_cursor, oa_org_id, oa_org_shortname):
+    #为找不到对应关系的组织在对应表中生成占位行，如果不需要注释这个函数【共使用了3次】
+    pass
+    zero_peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
+                    `ding_dept_name`, `oa_org_id`, `oa_org_shortname`) \
+                    VALUES('-1', '-1', '%s', '%s') " % (oa_org_id, oa_org_shortname)
+    ding_cursor.execute(zero_peer_sql)
+    ding_db.commit()
+
+
+
 def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, level, oa_org_id, oa_hierarchy, ding_hierarchy, operater):
+    #参数说明两个数据库cursor，一个数据库连接，两个树，oa侧组织的级别，oa侧组织id，oa所有组织按级别分类的词典，钉钉所有组织按级别分类形成的词典，数据库操作命令
+    #需要防备ding_hierarchy[level]不存在！
+    #返回值说明：-1错误，非负为匹配次数
     #global oa_result, oa_parent_id #debug only
     method_a_counter = 0
     method_b_counter = 0
     oa_parent_id = oa_tree.parent(oa_org_id).identifier
     if oa_parent_id == None:
-        return -1 #树中没有上级节点【不应该出现这个错误】
+        return -1 #树中没有上级节点【不应该出现这个错误，因为树中除了根节点都有上级节点，而根节点不会执行这个函数】
     #查找oa上级部门对应的钉钉部门
     find_ding_parent_sql = "SELECT `ding_dept_id` FROM ding_oa_department WHERE `oa_org_id`='%s'" % oa_parent_id
     ding_cursor.execute(find_ding_parent_sql)
     ding_parent_id = ding_cursor.fetchone()
     #print ding_parent_id #debug only
-    if ding_parent_id == None: #不能查到oa上级部门对应的钉钉部门则按照级别搜索
+    if ding_parent_id == None or ding_parent_id[0] == '-1': #不能查到oa上级部门对应的钉钉部门则按照级别搜索
         #print 'error : %s' % oa_org_id #debug only
         oa_sql = "SELECT `shortname` from groupinfo WHERE `orgid`='%s'" % oa_org_id
         #print oa_sql #debug only
         oa_cursor.execute(oa_sql)
         oa_result = oa_cursor.fetchone() #得到oa侧的组织名oa_result[0]
-        #print type(oa_result) #debug only    
+        #print type(oa_result) #debug only
+        if (level in ding_hierarchy) != True:
+            zero_peers(ding_db, ding_cursor, oa_org_id, oa_result[0])
+            return 0
         for i in range(len(ding_hierarchy[level])):
             ding_sql = "SELECT `name` FROM dingding_department_detail WHERE `id`='%s'" % ding_hierarchy[level][i]
             #print ding_sql
@@ -190,13 +207,15 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
-                else:
+                elif method_a_counter > 1:
                     peer_sql = "UPDATE ding_oa_department SET `matches`='%s' WHERE `oa_org_id`='%s'" % \
                                 (method_a_counter, oa_org_id)
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
-
+        if method_a_counter == 0:
+            zero_peers(ding_db, ding_cursor, oa_org_id, oa_result[0])
+        return method_a_counter
     else: #能查到oa上级部门对应的钉钉部门则缩小查找范围
         #print ding_parent_id[0] #debug only
         oa_sql = "SELECT `shortname` from groupinfo WHERE `orgid`='%s'" % oa_org_id
@@ -224,12 +243,15 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
-                else:
+                elif method_b_counter > 1:
                     peer_sql = "UPDATE ding_oa_department SET `matches`='%s' WHERE `oa_org_id`='%s'" % \
                                 (method_b_counter, oa_org_id)
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
-                    ding_db.commit()                    
+                    ding_db.commit()
+        if method_b_counter == 0:
+            zero_peers(ding_db, ding_cursor, oa_org_id, oa_result[0])
+        return method_b_counter
 
 
 
@@ -244,7 +266,6 @@ def check_peers(ding_cursor, oa_org_id):
         return 1
     else: #其他情况忽略
         return -1
-
 
 
 
@@ -281,8 +302,8 @@ def find_org_peers():
                     find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, i, oa_hierarchy[i][j], oa_hierarchy, ding_hierarchy, 'INSERT')
                 elif check_result == 1: #有对应关系则更新
                     find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, i, oa_hierarchy[i][j], oa_hierarchy, ding_hierarchy, 'REPLACE')
-                #else: #异常情况跳过
-                #    continue
+                else: #异常情况跳过
+                    continue
                 #break #debug only
             else: #虚拟根手动设置
                 #counterB = counterB + 1 #debug only
@@ -290,13 +311,11 @@ def find_org_peers():
                         `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
                         `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '1', '1')" % \
                         ('0', ding_tree.get_node('0').tag, '0', oa_tree.get_node('0').tag)
-            #print peer_sql #debug only
-            ding_cursor.execute(peer_sql)
-            ding_db.commit()
+                #print peer_sql #debug only
+                ding_cursor.execute(peer_sql)
+                ding_db.commit()
         #break #debug only
-
-
-
+        
     #print counterA, counterB #debug only 用于计算循环是否丢掉了oa的元素
     #关闭两侧数据库
     close_db(ding_db)
