@@ -320,20 +320,62 @@ def find_org_peers():
     #关闭两侧数据库
     close_db(ding_db)
     close_db(oa_db)
+    return True
 
 
+   
+#以oa侧为基准使用邮箱去查找钉钉侧的用户对应关系，查找不到对应关系的在oa_user_id行的写-1
+def compare_users(oa_db, oa_cursor, ding_db, ding_cursor):
+    oa_sql = "SELECT `userid`, `email` FROM personinfo"
+    oa_cursor.execute(oa_sql)
+    oa_result = oa_cursor.fetchall()
+    for i in range(len(oa_result)):
+        ding_sql = "SELECT `userid` FROM dingding_user_detail WHERE `email`='%s'" % oa_result[i][1]
+        ding_cursor.execute(ding_sql)
+        ding_result = ding_cursor.fetchone()
+        if ding_result != None:
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
+                        VALUES('%s', '%s', '%s') " % (ding_result[0], oa_result[i][1], oa_result[i][0])
+            ding_cursor.execute(peer_sql)
+            ding_db.commit()
+        else:
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
+                        VALUES('%s', '%s', '%s') " % (-1, oa_result[i][1], oa_result[i][0])
+            ding_cursor.execute(peer_sql)
+            ding_db.commit()
+    return True
 
 
+    
+def find_user_peers():
+    #连接数据库
+    ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
+    oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'np020')  
+    #两侧比较
+    compare_users(oa_db, oa_cursor, ding_db, ding_cursor)
+    #关闭数据库
+    close_db(ding_db)
+    close_db(oa_db)
+    return True    
+
+    
+    
+    
+    
+    
+    
+    
 '''测试部分'''
 
 #展示树形图  debug only
 #dingtree=create_ding_tree()
 #oatree=create_oa_tree()
 
-#查找组织对应关系【对外唯一接口】
+#查找组织对应关系【对外接口】
 #find_org_peers()
+#find_user_peers()
 
 '''遗留问题'''
 #1未作错误处理
 #2方法二中，门户数据库的一个部门，可能匹配到同级别同名的多个部门中的某个不确定的部门
-# 查询ding_oa_department时忽略find_method=2或者matches!=1的项目
+# 查询对应关系时忽略find_method=2或者matches!=1或者ding_dept_id=-1或者ding_user_id=-1的项目
