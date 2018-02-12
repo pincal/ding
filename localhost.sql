@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-11 10:07:21
+-- Generation Time: 2018-02-12 09:09:48
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -59,10 +59,9 @@ CREATE TABLE `ding_oa_user` (
   `ding_user_id` varchar(50) NOT NULL COMMENT 'ding中部分人为0起始的数字',
   `email` varchar(50) NOT NULL,
   `oa_user_id` varchar(50) NOT NULL COMMENT 'oa中为字符串',
-  `oa_ldap_user_id` varchar(50) NOT NULL,
-  `oa_user_update` tinyint(1) NOT NULL DEFAULT '0',
-  `ding_user_update` tinyint(1) NOT NULL DEFAULT '0',
-  `status` tinyint(1) NOT NULL,
+  `oa_user_update` tinyint(4) NOT NULL DEFAULT '0',
+  `ding_user_update` tinyint(4) NOT NULL DEFAULT '0',
+  `status` tinyint(4) NOT NULL DEFAULT '0',
   `oa_update_time` datetime DEFAULT NULL,
   `ding_update_time` datetime DEFAULT NULL,
   `last_update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -191,7 +190,8 @@ ALTER TABLE `ding_oa_department`
 -- Indexes for table `ding_oa_user`
 --
 ALTER TABLE `ding_oa_user`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `oa_user_id_UNIQUE` (`oa_user_id`);
 
 --
 -- Indexes for table `dingding_department_detail`
