@@ -46,8 +46,16 @@ def create_ding_tree():
                 else: #没有上级的不修改
                     continue
     #断开数据库
-    close_db(db)            
-    return ding_tree
+    close_db(db)
+    #return ding_tree
+    return ding_tree.subtree('1')
+
+##2018年2月22日得到一个以'1'为根的子树
+##对比钉钉组织结构和oa组织结构，钉钉的根节点为'1'，oa的根节点为'0000'。理论上除了根节点不应该有无上级的节点。
+##钉钉侧id为'1'的节点实际存在且无法通过API修改。
+##oa侧没有id为'0000'的节点，对于上级为'0000'的组织，统一挂在oa_root上。
+##但是通过测试发现，oa数据库中有组织的上级不存在，这种组织统一挂在虚根oa_root上。但是钉钉没有发现某个节点上级不存在的现象。
+##所以钉钉侧使用'1'为根对应oa侧的'0'根可以保证组织结构对应。
 
 
 
@@ -68,7 +76,7 @@ def create_oa_tree():
             #print dept_result[i][1].decode('utf-8'), dept_result[i][0], dept_result[i][2]
             oa_tree.create_node(dept_result[i][1], dept_result[i][0], '0')
         for i in range(len(dept_result)): #修改隶属关系
-            if dept_result[i][0] != 'XXXX' : #只要不是实根，就要修改隶属关系【OA中'001000'等的组织上级为‘0000’即OA数据库中存在虚根，所以无需做此步骤】
+            if dept_result[i][2] != '0000' : #OA中'001000'等的组织上级为'0000'即OA数据库中存在虚根，所以无需做此步骤
                 if oa_tree.contains(dept_result[i][2]): #判断上级是否存在
                     oa_tree.move_node(dept_result[i][0], dept_result[i][2])
                 else: #没有上级的不修改
@@ -310,7 +318,7 @@ def find_org_peers():
                 peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
                         `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
                         `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '1', '1')" % \
-                        ('0', ding_tree.get_node('0').tag, '0', oa_tree.get_node('0').tag)
+                        ('1', ding_tree.get_node('1').tag, '0000', oa_tree.get_node('0').tag)
                 #print peer_sql #debug only
                 ding_cursor.execute(peer_sql)
                 ding_db.commit()
@@ -330,6 +338,13 @@ def compare_users(oa_db, oa_cursor, ding_db, ding_cursor):
     oa_cursor.execute(oa_sql)
     oa_result = oa_cursor.fetchall()
     for i in range(len(oa_result)):
+        if oa_result[i][1] == None or oa_result[i][1] == '':
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
+                        VALUES('%s', '%s', '%s') " % ('-2', oa_result[i][1], oa_result[i][0])
+            ding_cursor.execute(peer_sql)
+            ding_db.commit()
+            continue
+        
         ding_sql = "SELECT `userid` FROM dingding_user_detail WHERE `email`='%s'" % oa_result[i][1]
         ding_cursor.execute(ding_sql)
         ding_result = ding_cursor.fetchone()
@@ -340,7 +355,7 @@ def compare_users(oa_db, oa_cursor, ding_db, ding_cursor):
             ding_db.commit()
         else:
             peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % (-1, oa_result[i][1], oa_result[i][0])
+                        VALUES('%s', '%s', '%s') " % ('-1', oa_result[i][1], oa_result[i][0])
             ding_cursor.execute(peer_sql)
             ding_db.commit()
     return True
@@ -378,4 +393,4 @@ def find_user_peers():
 '''遗留问题'''
 #1未作错误处理
 #2方法二中，门户数据库的一个部门，可能匹配到同级别同名的多个部门中的某个不确定的部门
-# 查询对应关系时忽略find_method=2或者matches!=1或者ding_dept_id=-1或者ding_user_id=-1的项目
+# 查询对应关系时忽略find_method=2或者matches!=1或者ding_dept_id=-1或者ding_user_id=-1或者-2的项目
