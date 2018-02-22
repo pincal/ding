@@ -78,6 +78,7 @@ def ding_create_all_department(ding_db, ding_cursor, ding_hierarchy):
                         break
                     else:
                         #print 'create department fail' #debug only
+                        #print ding_hierarchy[i][j]
                         #print_dict(create_result) #debug only
                         time.sleep(1)                   
     return True
@@ -86,7 +87,7 @@ def ding_create_all_department(ding_db, ding_cursor, ding_hierarchy):
 
 def ding_update_department(ding_db, ding_cursor, ding_dept_id):
     if ding_dept_id == '0' or ding_dept_id == '1' or ding_dept_id == '-1':
-    #print 'root %s, %s' % (i,j) #debug only
+        #print 'ding_update_department %s error ' % ding_dept_id #debug only
         return False
     else:
         update_sql = "SELECT  `id`, `name` , `parentid` , `order` , \
@@ -234,7 +235,7 @@ def ding_one_key_create():
     #获取ding树深度为1234...的所有节点
     ding_hierarchy = get_hierarchy(ding_tree)
     #向钉钉通讯录新建部门
-    ding_create_all_department(ding_db, ding_cursor, ding_hierarchy)
+    #ding_create_all_department(ding_db, ding_cursor, ding_hierarchy)
     #向钉钉通讯录上传人员信息
     ding_create_all_user(ding_db, ding_cursor)
     #关闭数据库
@@ -242,7 +243,7 @@ def ding_one_key_create():
     return True
 
 #地外接口
-#ding_one_key_create()  
+ding_one_key_create()  
 
 
 ##存在问题：偶尔报错<urlopen error ('_ssl.c:645: The handshake operation timed out',)>错误在底层，目前不清楚如何处理
