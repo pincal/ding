@@ -61,10 +61,15 @@ def ding_create_all_department(ding_db, ding_cursor, ding_hierarchy):
                 db_result = ding_cursor.fetchone()
                 #第一步在根部门上新建所有部门
                 for k in range(5):
+##                    is_success, create_result = department.create_department(dingapi_timer.access_token, 
+##                        db_result[0], '1', order=db_result[2], createDeptGroup=db_result[3], 
+##                        deptHiding=db_result[5], deptPermits=db_result[6],userPermits=db_result[7], 
+##                        outerDept=db_result[8], outerPermitDepts=db_result[9], outerPermitUsers=db_result[10])
+                    #测试时尽可能不要打扰别人
                     is_success, create_result = department.create_department(dingapi_timer.access_token, 
-                        db_result[0], '1', order=db_result[2], createDeptGroup=db_result[3], 
-                        deptHiding=db_result[5], deptPermits=db_result[6],userPermits=db_result[7], 
-                        outerDept=db_result[8], outerPermitDepts=db_result[9], outerPermitUsers=db_result[10])
+                        db_result[0], '1', order=db_result[2], createDeptGroup=False, 
+                        deptHiding=True, deptPermits=None, userPermits=None, 
+                        outerDept=None, outerPermitDepts=None, outerPermitUsers=None)
                     if is_success == True:
                 #第二步根据返回的部门id修改数据库中的数据
                         write_test_sql_a = "UPDATE dingding_department_detail SET `id`='%s' where `id`='%s' " \
@@ -74,7 +79,8 @@ def ding_create_all_department(ding_db, ding_cursor, ding_hierarchy):
                         ding_cursor.execute(write_test_sql_a)
                         ding_cursor.execute(write_test_sql_b)
                         ding_db.commit()
-                        ding_update_department(ding_db, ding_cursor, create_result.get(u'id', '-1') )
+                        ding_update_department(ding_db, ding_cursor, create_result.get(u'id', '-1'))
+                        db_update_user_department(ding_db, ding_cursor, ding_hierarchy[i][j], create_result.get(u'id', '-1'))
                         break
                     else:
                         #print 'create department fail' #debug only
@@ -83,7 +89,44 @@ def ding_create_all_department(ding_db, ding_cursor, ding_hierarchy):
                         time.sleep(1)                   
     return True
 
+def db_update_user_department(ding_db, ding_cursor, old_dept_id, new_dept_id):
+    get_user_sql = "SELECT `userid`, `department` FROM dingding_user_detail where department like '%%%s%%';" % old_dept_id
+    ding_cursor.execute(get_user_sql)
+    db_user_result = ding_cursor.fetchall()
 
+    for i in range(len(db_user_result)):
+        dept_list = db_user_result[i][1].strip('[').strip(']').strip(' ').split(',') #注意如果有空格remove可能会出错，所以必须去掉空格
+        for j in range(len(dept_list)):
+            if type(dept_list[j]) == str:
+                dept_list[j] = dept_list[j].strip(' ')
+        print dept_list, 'old' #debug only
+        dept_list.remove(old_dept_id)
+        print dept_list, 'delete'#debug only
+        dept_list.append(str(new_dept_id))
+        print dept_list, 'new' #debug only
+        new_dept_list = check_list(dept_list)
+        print new_dept_list, 'checked new' #debug only
+        update_user_sql = "UPDATE dingding_user_detail SET `department`='%s' WHERE `userid`='%s' " % (new_dept_list, db_user_result[i][0])
+        print update_user_sql #debug only
+        ding_cursor.execute(update_user_sql)
+        ding_db.commit()
+
+    return True
+        
+
+#一个检查函数，确保数据库中不会出现这种情况['58038751', 60094508]多出的引号导致sql错误，以及第二个数字前的空格【这个空格，可能无法避免，所以在读取的时候务必删除】     
+def check_list(lists):
+    if lists == None or len(lists) == 0:
+        return lists
+    new_list = []
+    for i in range(len(lists)):
+        if type(lists[i]) == str:
+            lists[i] = lists[i].strip(' ')
+        new_list.append(int(lists[i]))
+    return new_list
+
+
+    
 
 def ding_update_department(ding_db, ding_cursor, ding_dept_id):
     if ding_dept_id == '0' or ding_dept_id == '1' or ding_dept_id == '-1':
@@ -100,12 +143,19 @@ def ding_update_department(ding_db, ding_cursor, ding_dept_id):
         ding_cursor.execute(update_sql)
         db_result = ding_cursor.fetchone()   
         for k in range(5):
+##            is_success, update_result = department.update_department(dingapi_timer.access_token, 
+##                db_result[0], name=db_result[1], parentid=db_result[2], order=db_result[3], 
+##                createDeptGroup=db_result[4], deptHiding=db_result[6], deptPermits=None,
+##                userPermits=None, outerDept=None, outerPermitDepts=None,
+##                outerPermitUsers=None, autoAddUser=db_result[5], deptManagerUserList=None,
+##                orgDeptOwner=None)
+            #测试时尽可能不要打扰别人
             is_success, update_result = department.update_department(dingapi_timer.access_token, 
                 db_result[0], name=db_result[1], parentid=db_result[2], order=db_result[3], 
-                createDeptGroup=db_result[4], deptHiding=db_result[6], deptPermits=None,
+                createDeptGroup=False, deptHiding=True, deptPermits=None,
                 userPermits=None, outerDept=None, outerPermitDepts=None,
-                outerPermitUsers=None, autoAddUser=db_result[5], deptManagerUserList=None,
-                orgDeptOwner=None)                    
+                outerPermitUsers=None, autoAddUser=False, deptManagerUserList=None,
+                orgDeptOwner=None)  
             if is_success == True:
                 break
             else:
@@ -171,9 +221,9 @@ def ding_delete_all_empty_department():
             is_success, del_result = department.delete_department(dingapi_timer.access_token, db_result[i][0])
             #print 'delete department %s ,%s' % (db_result[i][0], is_success) #debug only
             #print_dict(del_result) #debug only
-            if is_success == False and del_result.has_key('60003'): #判断错误原因是否因为部门非空
+            if is_success == False and del_result.has_key('60003'): #判断错误原因是否因为部门不存在，不存在直接跳过
                 pass
-                
+    close_db(ding_db)            
     return True
         
     
@@ -186,8 +236,13 @@ def ding_create_all_user(ding_db, ding_cursor):
     user_result = ding_cursor.fetchall()
     for i in range(len(user_result)):
         for j in range(5):
+            department_list = user_result[i][2].strip('[').strip(']').strip(' ').split(',')
+            for k in range(len(department_list)):
+                if type(department_list[k]) == str:
+                    department_list[k] = department_list[k].strip(' ')
+            #print department_list #debug only
             is_success, create_result = user.create_user(dingapi_timer.access_token, user_result[i][0],
-                user_result[i][1], user_result[i][2], user_result[i][3], email=None, position=None,
+                user_result[i][1], department_list, user_result[i][3], email=None, position=None,
                 jobnumber=None, extattr=None, orderInDepts=None,tel=None, workPlace=None,
                 remark=None, isHide=None, isSenior=None)
             if is_success == True:
@@ -235,7 +290,7 @@ def ding_one_key_create():
     #获取ding树深度为1234...的所有节点
     ding_hierarchy = get_hierarchy(ding_tree)
     #向钉钉通讯录新建部门
-    #ding_create_all_department(ding_db, ding_cursor, ding_hierarchy)
+    ding_create_all_department(ding_db, ding_cursor, ding_hierarchy)
     #向钉钉通讯录上传人员信息
     ding_create_all_user(ding_db, ding_cursor)
     #关闭数据库
@@ -243,7 +298,7 @@ def ding_one_key_create():
     return True
 
 #地外接口
-ding_one_key_create()  
+#ding_one_key_create()  
 
 
 ##存在问题：偶尔报错<urlopen error ('_ssl.c:645: The handshake operation timed out',)>错误在底层，目前不清楚如何处理

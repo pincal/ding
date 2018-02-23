@@ -20,7 +20,7 @@ logger.addHandler(file_handler)
 
 def http_get(url):
     try:
-        response = urllib2.urlopen(url, timeout=10)
+        response = urllib2.urlopen(url, timeout=30)
     except urllib2.URLError, e:
         logger.error(e)
     result = json.loads(response.read())
@@ -34,7 +34,7 @@ def http_post(url, data):
     }
     request = urllib2.Request(url, json.dumps(data), headers)
     try:
-        response = urllib2.urlopen(request, timeout=10)
+        response = urllib2.urlopen(request, timeout=30)
     except urllib2.URLError, e:
         logger.error(e)
     result = json.loads(response.read())
@@ -49,7 +49,7 @@ def http_upload(url, data):
     request = urllib2.Request(url, datagen, headers)
 
     try:
-        response = urllib2.urlopen(request, timeout=10)
+        response = urllib2.urlopen(request, timeout=30)
     except urllib2.URLError, e:
         logger.error(e)
     result = json.loads(response.read())
@@ -59,7 +59,7 @@ def http_upload(url, data):
 
 def http_download(url, media_file):
     try:
-        response = urllib2.urlopen(url, timeout=10)
+        response = urllib2.urlopen(url, timeout=30)
     except urllib2.URLError, e:
         logger.error(e)
     media_file.write(response.read())
