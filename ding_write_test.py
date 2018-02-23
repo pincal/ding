@@ -99,15 +99,15 @@ def db_update_user_department(ding_db, ding_cursor, old_dept_id, new_dept_id):
         for j in range(len(dept_list)):
             if type(dept_list[j]) == str:
                 dept_list[j] = dept_list[j].strip(' ')
-        print dept_list, 'old' #debug only
+        #print dept_list, 'old' #debug only
         dept_list.remove(old_dept_id)
-        print dept_list, 'delete'#debug only
+        #print dept_list, 'delete'#debug only
         dept_list.append(str(new_dept_id))
-        print dept_list, 'new' #debug only
+        #print dept_list, 'new' #debug only
         new_dept_list = check_list(dept_list)
-        print new_dept_list, 'checked new' #debug only
+        #print new_dept_list, 'checked new' #debug only
         update_user_sql = "UPDATE dingding_user_detail SET `department`='%s' WHERE `userid`='%s' " % (new_dept_list, db_user_result[i][0])
-        print update_user_sql #debug only
+        #print update_user_sql #debug only
         ding_cursor.execute(update_user_sql)
         ding_db.commit()
 
