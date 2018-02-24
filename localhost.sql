@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-12 09:09:48
+-- Generation Time: 2018-02-24 09:03:25
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -131,7 +131,7 @@ CREATE TABLE `dingding_user_detail` (
   `isBoss` tinyint(1) NOT NULL,
   `dingId` varchar(45) DEFAULT NULL,
   `unionid` varchar(45) DEFAULT NULL,
-  `isLeaderInDepts` varchar(45) NOT NULL,
+  `isLeaderInDepts` varchar(45) DEFAULT NULL,
   `isHide` tinyint(1) NOT NULL,
   `department` varchar(145) NOT NULL,
   `position` varchar(45) DEFAULT NULL,
@@ -141,9 +141,11 @@ CREATE TABLE `dingding_user_detail` (
   `extattr` varchar(300) DEFAULT NULL,
   `openId` varchar(45) DEFAULT NULL,
   `stateCode` varchar(45) DEFAULT NULL,
-  `isSenior` tinyint(1) NOT NULL,
+  `isSenior` tinyint(1) DEFAULT NULL,
   `roles` varchar(300) DEFAULT NULL,
-  `syn_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `syn_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `order` varchar(145) DEFAULT NULL COMMENT '无意义数据请忽略',
+  `isLeader` tinyint(1) DEFAULT NULL COMMENT '无意义数据请忽略'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
