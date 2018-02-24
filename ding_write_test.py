@@ -114,7 +114,7 @@ def db_update_user_department(ding_db, ding_cursor, old_dept_id, new_dept_id):
     return True
         
 
-#一个检查函数，确保数据库中不会出现这种情况['58038751', 60094508]多出的引号导致sql错误，以及第二个数字前的空格【这个空格，可能无法避免，所以在读取的时候务必删除】     
+#一个检查函数，确保数据库中不会出现这种情况['58038751', 60094508]多出的引号导致sql错误，以及第二个数字前的空格   
 def check_list(lists):
     if lists == None or len(lists) == 0:
         return lists
@@ -123,7 +123,8 @@ def check_list(lists):
         if type(lists[i]) == str:
             lists[i] = lists[i].strip(' ')
         new_list.append(int(lists[i]))
-    return new_list
+    string = str(new_list).replace(' ','')
+    return string
 
 
     
@@ -256,24 +257,6 @@ def ding_create_all_user(ding_db, ding_cursor):
 
 
 
-def ding_create_user(ding_db, ding_cursor, ding_user_id):
-    pass
-
-
-
-def ding_update_all_user(ding_db, ding_cursor):
-    pass
-
-
-
-def ding_update_user(ding_db, ding_cursor, ding_user_id):
-    pass
- 
-
-
-
-
-
 
 '''用于在空企业中进行测试'''
 '''预备工作：【ding_read模块】读取钉钉上某实际公司的组织架构并存储'''
@@ -297,7 +280,7 @@ def ding_one_key_create():
     close_db(ding_db)
     return True
 
-#地外接口
+#对外接口
 #ding_one_key_create()  
 
 
