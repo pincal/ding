@@ -29,6 +29,12 @@ def close_db(db):
 
 #初始化部门清单
 def store_department_list(db, cursor, fetch_child=True, parent_id=1):
+    #钉钉获取部门列表的API不会返回根部门，所以手动指定根部门，根部门不能通过API进行修改，所以名称没有意义            
+    ding_root_sql = "REPLACE INTO dingding_department_list(`id`, `name`, `parentid`, `createDeptGroup`, `autoAddUser`) \
+                        VALUES('1', '中国联合网络通信集团有限公司', '0', '1', '1')"
+    cursor.execute(ding_root_sql)
+    db.commit()
+    #获取根部门以下所有部门清单
     #global result
     is_success, result = department.get_department_list(dingapi_timer.access_token, fetch_child, parent_id)
     #print result #debug only
@@ -47,6 +53,7 @@ def store_department_list(db, cursor, fetch_child=True, parent_id=1):
             except MySQLdb.Error, e:  
                 sqlError =  "Error:%s" % str(e)
                 print sqlError
+
 
 
 
