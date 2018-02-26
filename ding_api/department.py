@@ -7,6 +7,17 @@ from config import API_ADDR
 from utils import http_get, http_post
 
 
+
+def get_sub_dept_id_list(access_token, id=1):
+    url = 'https://%s/department/list_ids?' % API_ADDR
+    args = {
+        'access_token': access_token,
+        'id': id
+    }
+    url += urlencode(args)
+    return http_get(url)
+
+
 def get_department_list(access_token, fetch_child=True, parentid=1):
     url = 'https://%s/department/list?' % API_ADDR
     args = {
@@ -23,7 +34,6 @@ def get_department_detail(access_token, departmentid):
     args = {
         'access_token': access_token,
         'id': departmentid
-
     }
     url += urlencode(args)
     return http_get(url)    
