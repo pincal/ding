@@ -8,8 +8,9 @@ from dingding_sdk import utils
 import MySQLdb
 import os
 import threading
+import threadpool
 import math
-from multiprocessing import Process, Pool, Queue
+
 
 
 def connect_db(address, user, password, database):
@@ -31,10 +32,10 @@ def close_db(db):
 
 
 #初始化部门清单
-def store_department_list(fetch_child=True, parent_id=1):
+def store_department_list(access_token, fetch_child=True, parent_id=1):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
     #global result
-    is_success, result = department.get_department_list(dingapi_timer.access_token, fetch_child, parent_id)
+    is_success, result = department.get_department_list(access_token, fetch_child, parent_id)
     #print result #debug only
     if is_success == True:
         for i in range(len(result['department'])):
@@ -56,9 +57,9 @@ def store_department_list(fetch_child=True, parent_id=1):
 
 
 
-def store_department_detail(department_id):
+def store_department_detail(access_token, department_id):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    is_success, result = department.get_department_detail(dingapi_timer.access_token, department_id)
+    is_success, result = department.get_department_detail(access_token, department_id)
     #print result #debug only
     if is_success == True and department_id != 1:  #id为1的为根部门，根部门钉钉不会返回parentid,在数据库中将根部门的parentid设置为0
         ding_read_sql = "REPLACE INTO dingding_department_list(`id`, `name`, `parentid`, `createDeptGroup`, `autoAddUser`) \
@@ -85,9 +86,9 @@ def store_department_detail(department_id):
 
 #根据部门获取人员基本信息，对于具有相同userid的人员记录只存储一次
 #确保user_list表没有重复的人员
-def store_user_detail(department_id, offset=None, size=None, order=None):
+def store_user_detail(access_token, department_id, offset=None, size=None, order=None):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    is_success, result = user.get_department_detail_userlist(dingapi_timer.access_token, department_id, offset, size, order)
+    is_success, result = user.get_department_detail_userlist(access_token, department_id, offset, size, order)
     if is_success == True and result != None:
         for i in range(len(result['userlist'])):            
             write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
@@ -128,24 +129,25 @@ def ding_one_key_store():
             return -1
     #print class1_result['sub_dept_id_list'] #debug only
 
-        
-##    #使用子进程获取根部门直接下级的组织清单
+
+##    #threading多线程获取部门清单
 ##    for i in range(len(class1_result['sub_dept_id_list'])):
-##        store_department_detail(class1_result['sub_dept_id_list'][i])
-##    department_pool = Pool()
+##        store_department_detail(dingapi_timer.access_token, ding_db, ding_cursor, class1_result['sub_dept_id_list'][i])
 ##    for i in range(len(class1_result['sub_dept_id_list'])):
-##        department_pool.apply_async(store_department_list, args=(True, class1_result['sub_dept_id_list'][i]))
-##    department_pool.close()
-##    department_pool.join()
-##    #使用子进程获取所有人员详情
-##    user_pool = Pool()
+##        #thread.start_new_thread(store_department_list, (True, class1_result['sub_dept_id_list'][i]))
+##        dept_thread = threading.Thread(target=store_department_list, args=(dingapi_timer.access_token, True, class1_result['sub_dept_id_list'][i]))
+##        dept_thread.start()
+##        dept_thread.join()
+
+       
+##    #threading多线程获取人员详情
 ##    ding_dept_num_sql = "SELECT count(*) FROM dingtalk.dingding_department_list;"
 ##    ding_cursor.execute(ding_dept_num_sql)
 ##    ding_dept_num = ding_cursor.fetchone()
 ##    print ding_dept_num #debug only
 ##    if ding_dept_num == None:
 ##        return -2
-##    group_factor = 10.0 #设定分组单位，需要小数位为零
+##    group_factor = 25.0#设定分组单位，需要小数位为零
 ##    group_number = int(math.ceil(ding_dept_num[0] / group_factor)) 
 ##    for i in range(group_number):        
 ##        ding_dept_group_sql = "SELECT `id` FROM dingtalk.dingding_department_list limit %s,%s;" % (int(i*group_factor), int((i+1)*group_factor-1))
@@ -153,42 +155,49 @@ def ding_one_key_store():
 ##        ding_cursor.execute(ding_dept_group_sql)
 ##        dept_group = ding_cursor.fetchall()
 ##        for j in range(len(dept_group)):
-##            user_pool.apply_async(store_user_detail, args=(class1_result['sub_dept_id_list'][j]))
-##    user_pool.close()
-##    user_pool.join()
+##            #thread.start_new_thread(store_user_detail, (dept_group[j][0],))
+##            user_thread = threading.Thread(target=store_user_detail, args=(dingapi_timer.access_token, dept_group[j][0]))
+##            user_thread.start()
+##        user_thread.join()
 
 
 
 
-    #多线程获取部门清单
-    for i in range(len(class1_result['sub_dept_id_list'])):
-        store_department_detail(class1_result['sub_dept_id_list'][i])
-    for i in range(len(class1_result['sub_dept_id_list'])):
-        #thread.start_new_thread(store_department_list, (True, class1_result['sub_dept_id_list'][i]))
-        dept_thread = threading.Thread(target=store_department_list, args=(True, class1_result['sub_dept_id_list'][i]))
-        dept_thread.start()
-        dept_thread.join()
+##    #threadpool多线程获取部门清单
+##    for i in range(len(class1_result['sub_dept_id_list'])):
+##        store_department_detail(dingapi_timer.access_token, class1_result['sub_dept_id_list'][i])
+##    department_pool = threadpool.ThreadPool(25)
+##    for i in range(len(class1_result['sub_dept_id_list'])):
+##        dict_vars = {'access_token':dingapi_timer.access_token, 'fetch_child':True, 'parent_id':class1_result['sub_dept_id_list'][i]}
+##        func_vars = [(None, dict_vars)]
+##        requests = threadpool.makeRequests(store_department_list, func_vars)
+##        [department_pool.putRequest(req) for req in requests]
+##    department_pool.wait()
 
-       
-    #多线程获取人员详情
+
+
+    #threadpool多线程获取人员详情
+    user_pool = threadpool.ThreadPool(50)
+        
     ding_dept_num_sql = "SELECT count(*) FROM dingtalk.dingding_department_list;"
     ding_cursor.execute(ding_dept_num_sql)
     ding_dept_num = ding_cursor.fetchone()
     print ding_dept_num #debug only
     if ding_dept_num == None:
         return -2
-    group_factor = 10.0#设定分组单位，需要小数位为零
+    group_factor = 25.0#设定分组单位，需要小数位为零[目前计划为100或者25]
     group_number = int(math.ceil(ding_dept_num[0] / group_factor)) 
     for i in range(group_number):        
         ding_dept_group_sql = "SELECT `id` FROM dingtalk.dingding_department_list limit %s,%s;" % (int(i*group_factor), int((i+1)*group_factor-1))
         print ding_dept_group_sql #debug only
         ding_cursor.execute(ding_dept_group_sql)
         dept_group = ding_cursor.fetchall()
-        for j in range(len(dept_group)):
-            #thread.start_new_thread(store_user_detail, (dept_group[j][0],))
-            user_thread = threading.Thread(target=store_user_detail, args=(dept_group[j][0],))
-            user_thread.start()
-            user_thread.join()
+        for j in range(len(dept_group)):         
+            dict_vars = {'access_token':dingapi_timer.access_token, 'department_id':dept_group[j][0]}
+            func_vars = [(None, dict_vars)]
+            requests = threadpool.makeRequests(store_user_detail, func_vars)
+            [user_pool.putRequest(req) for req in requests]
+        user_pool.wait()
 
 
     #断开数据库
@@ -206,5 +215,5 @@ def ding_one_key_store():
     
 #debug only
 #本函数完成一键存储和刷新钉钉侧的用户详情和组织详情【对外唯一接口】
-#ding_one_key_store()
+ding_one_key_store()
 
