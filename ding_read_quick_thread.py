@@ -6,8 +6,6 @@ from dingding_sdk import user
 from dingding_sdk import department
 from dingding_sdk import utils
 import MySQLdb
-import os
-import threading
 import threadpool
 import math
 
@@ -163,16 +161,16 @@ def ding_one_key_store():
 
 
 
-##    #threadpool多线程获取部门清单
-##    for i in range(len(class1_result['sub_dept_id_list'])):
-##        store_department_detail(dingapi_timer.access_token, class1_result['sub_dept_id_list'][i])
-##    department_pool = threadpool.ThreadPool(25)
-##    for i in range(len(class1_result['sub_dept_id_list'])):
-##        dict_vars = {'access_token':dingapi_timer.access_token, 'fetch_child':True, 'parent_id':class1_result['sub_dept_id_list'][i]}
-##        func_vars = [(None, dict_vars)]
-##        requests = threadpool.makeRequests(store_department_list, func_vars)
-##        [department_pool.putRequest(req) for req in requests]
-##    department_pool.wait()
+    #threadpool多线程获取部门清单
+    for i in range(len(class1_result['sub_dept_id_list'])):
+        store_department_detail(dingapi_timer.access_token, class1_result['sub_dept_id_list'][i])
+    department_pool = threadpool.ThreadPool(25)
+    for i in range(len(class1_result['sub_dept_id_list'])):
+        dict_vars = {'access_token':dingapi_timer.access_token, 'fetch_child':True, 'parent_id':class1_result['sub_dept_id_list'][i]}
+        func_vars = [(None, dict_vars)]
+        requests = threadpool.makeRequests(store_department_list, func_vars)
+        [department_pool.putRequest(req) for req in requests]
+    department_pool.wait()
 
 
 
@@ -185,14 +183,15 @@ def ding_one_key_store():
     print ding_dept_num #debug only
     if ding_dept_num == None:
         return -2
-    group_factor = 25.0#设定分组单位，需要小数位为零[目前计划为100或者25]
-    group_number = int(math.ceil(ding_dept_num[0] / group_factor)) 
+    group_factor = 25#设定分组单位，必须为整数，目前计划为100或者25
+    group_number = int(math.ceil(float(ding_dept_num[0]) / group_factor))
+    #print float(ding_dept_num[0]), group_number
     for i in range(group_number):        
-        ding_dept_group_sql = "SELECT `id` FROM dingtalk.dingding_department_list limit %s,%s;" % (int(i*group_factor), int((i+1)*group_factor-1))
+        ding_dept_group_sql = "SELECT `id` FROM dingtalk.dingding_department_list limit %s,%s;" % (i*group_factor, group_factor)
         print ding_dept_group_sql #debug only
         ding_cursor.execute(ding_dept_group_sql)
         dept_group = ding_cursor.fetchall()
-        for j in range(len(dept_group)):         
+        for j in range(len(dept_group)): #len(dept_group)除去最后一个group都应该等于group_factor
             dict_vars = {'access_token':dingapi_timer.access_token, 'department_id':dept_group[j][0]}
             func_vars = [(None, dict_vars)]
             requests = threadpool.makeRequests(store_user_detail, func_vars)
@@ -215,5 +214,5 @@ def ding_one_key_store():
     
 #debug only
 #本函数完成一键存储和刷新钉钉侧的用户详情和组织详情【对外唯一接口】
-ding_one_key_store()
+#ding_one_key_store()
 
