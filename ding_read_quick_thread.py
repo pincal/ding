@@ -23,20 +23,39 @@ logger.addHandler(file_handler)
 
 
 def connect_db(address, user, password, database):
-    db = MySQLdb.connect(address, user, password, database)
-    db.set_character_set('utf8') #修改MySQLdb默认编码
-    cursor = db.cursor()
-    cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
-    cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
-    cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
+    for i in range(10):
+        try:
+            db = MySQLdb.connect(address, user, password, database)
+            db.set_character_set('utf8') #修改MySQLdb默认编码
+            cursor = db.cursor()
+            cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
+            cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
+            cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
+        except MySQLdb.Warning, w:  
+            sqlWarning =  "Warning:%s" % str(w)
+            print sqlWarning
+        except MySQLdb.Error, e:  
+            sqlError =  "Error:%s" % str(e)
+            print sqlError
+        else:
+            break
     return db, cursor
 
 
 
 def close_db(db):
-    db.close()
+    for i in range(10):
+        try:
+            db.close()
+        except MySQLdb.Warning, w:  
+            sqlWarning =  "Warning:%s" % str(w)
+            print sqlWarning
+        except MySQLdb.Error, e:  
+            sqlError =  "Error:%s" % str(e)
+            print sqlError
+        else:
+            break            
     return True
-
 
 
 
@@ -68,9 +87,9 @@ def store_department_list(access_token, fetch_child=True, parent_id=1):
             logger.error(logging_message)
     db.close()
     return True
-
-
-
+    
+    
+    
 def store_department_detail(access_token, department_id):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
     for i in range(5):
@@ -104,6 +123,7 @@ def store_department_detail(access_token, department_id):
     return True
 
 
+    
 #根据部门获取人员基本信息，对于具有相同userid的人员记录只存储一次
 #确保user_list表没有重复的人员
 def store_user_detail(access_token, department_id, offset=None, size=None, order=None):
@@ -213,7 +233,7 @@ def ding_one_key_store():
     print 'The number of departments is %d' % ding_dept_num #debug only
     if ding_dept_num == None:
         return -2
-    group_factor = 50#设定分组单位，必须为整数，目前计划为100或者25
+    group_factor = 100#设定分组单位，必须为整数，目前计划为100或者25
     group_number = int(math.ceil(float(ding_dept_num[0]) / group_factor))
     #print float(ding_dept_num[0]), group_number
     for i in range(group_number):        
@@ -228,6 +248,9 @@ def ding_one_key_store():
             [user_pool.putRequest(req) for req in requests]
         user_pool.wait()
 
+     
+        
+        
 
     #断开数据库
     close_db(ding_db)
