@@ -8,6 +8,17 @@ from dingding_sdk import utils
 import MySQLdb
 import threadpool
 import math
+import logging
+
+
+path_log_file = '/tmp/ding_read.log'
+#Windows下会向出错程序所在分区写入日志 | tmp文件夹需要预先手工建立
+
+logger = logging.getLogger('DingRead')
+file_handler = logging.FileHandler(path_log_file)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(funcName)s-->%(levelname)s %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 
 
@@ -33,13 +44,48 @@ def close_db(db):
 def store_department_list(access_token, fetch_child=True, parent_id=1):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
     #global result
-    is_success, result = department.get_department_list(access_token, fetch_child, parent_id)
-    #print result #debug only
-    if is_success == True:
-        for i in range(len(result['department'])):
-            ding_read_sql = "REPLACE INTO dingding_department_list(%s) VALUES(%s)" % \
-                        (utils.list2string(result['department'][i].keys(), 'keys'),
-                         utils.list2string(result['department'][i].values(), 'values') )
+    for i in range(5):
+        is_success, result = department.get_department_list(access_token, fetch_child, parent_id)
+        #print result #debug only
+        if is_success == True:
+            for i in range(len(result['department'])):
+                ding_read_sql = "REPLACE INTO dingding_department_list(%s) VALUES(%s)" % \
+                            (utils.list2string(result['department'][i].keys(), 'keys'),
+                             utils.list2string(result['department'][i].values(), 'values') )
+                #print ding_read_sql #debug only
+                try:
+                    cursor.execute(ding_read_sql)
+                    db.commit()
+                except MySQLdb.Warning, w:  
+                    sqlWarning =  "Warning:%s" % str(w)
+                    print sqlWarning
+                except MySQLdb.Error, e:  
+                    sqlError =  "Error:%s" % str(e)
+                    print sqlError
+            break
+        else:
+            logging_message = {'access_token':access_token, 'fetch_child':fetch_child, 'parent_id':parent_id}
+            logger.error(logging_message)
+    db.close()
+    return True
+
+
+
+def store_department_detail(access_token, department_id):
+    db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
+    for i in range(5):
+        is_success, result = department.get_department_detail(access_token, department_id)
+        #print result #debug only
+        if is_success == True:
+            if department_id != 1:  #id为1的为根部门，根部门钉钉不会返回parentid,在数据库中将根部门的parentid设置为0
+                ding_read_sql = "REPLACE INTO dingding_department_list(`id`, `name`, `parentid`, `createDeptGroup`, `autoAddUser`) \
+                                VALUES('%s', '%s', '%s', '%d', '%d')" % \
+                                (result['id'], result['name'], result['parentid'], result['createDeptGroup'], result['autoAddUser'])
+            else:
+                ding_read_sql = "REPLACE INTO dingding_department_list(`id`, `name`, `parentid`, `createDeptGroup`, `autoAddUser`) \
+                                VALUES('%s', '%s', '%s', '%d', '%d')" % \
+                                (result['id'], result['name'], '0', result['createDeptGroup'], result['autoAddUser'])    
+
             #print ding_read_sql #debug only
             try:
                 cursor.execute(ding_read_sql)
@@ -50,34 +96,10 @@ def store_department_list(access_token, fetch_child=True, parent_id=1):
             except MySQLdb.Error, e:  
                 sqlError =  "Error:%s" % str(e)
                 print sqlError
-    db.close()
-    return True
-
-
-
-def store_department_detail(access_token, department_id):
-    db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    is_success, result = department.get_department_detail(access_token, department_id)
-    #print result #debug only
-    if is_success == True and department_id != 1:  #id为1的为根部门，根部门钉钉不会返回parentid,在数据库中将根部门的parentid设置为0
-        ding_read_sql = "REPLACE INTO dingding_department_list(`id`, `name`, `parentid`, `createDeptGroup`, `autoAddUser`) \
-                        VALUES('%s', '%s', '%s', '%d', '%d')" % \
-                        (result['id'], result['name'], result['parentid'], result['createDeptGroup'], result['autoAddUser'])
-    else:
-        ding_read_sql = "REPLACE INTO dingding_department_list(`id`, `name`, `parentid`, `createDeptGroup`, `autoAddUser`) \
-                        VALUES('%s', '%s', '%s', '%d', '%d')" % \
-                        (result['id'], result['name'], '0', result['createDeptGroup'], result['autoAddUser'])    
-
-    #print ding_read_sql #debug only
-    try:
-        cursor.execute(ding_read_sql)
-        db.commit()
-    except MySQLdb.Warning, w:  
-        sqlWarning =  "Warning:%s" % str(w)
-        print sqlWarning
-    except MySQLdb.Error, e:  
-        sqlError =  "Error:%s" % str(e)
-        print sqlError
+            break
+        else:
+            logging_message = {'access_token':access_token, 'department_id':department_id}
+            logger.error(logging_message)           
     db.close()
     return True
 
@@ -86,21 +108,26 @@ def store_department_detail(access_token, department_id):
 #确保user_list表没有重复的人员
 def store_user_detail(access_token, department_id, offset=None, size=None, order=None):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    is_success, result = user.get_department_detail_userlist(access_token, department_id, offset, size, order)
-    if is_success == True and result != None:
-        for i in range(len(result['userlist'])):            
-            write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
-                (utils.list2string(result['userlist'][i].keys(), 'keys'), utils.list2string(result['userlist'][i].values(), 'values'))  
-            #print write_db #debug only
-            try:
-                cursor.execute(write_db)
-                db.commit()
-            except MySQLdb.Warning, w:  
-                sqlWarning =  "Warning:%s" % str(w)
-                print sqlWarning
-            except MySQLdb.Error, e:  
-                sqlError =  "Error:%s" % str(e)
-                print sqlError
+    for i in range(5):
+        is_success, result = user.get_department_detail_userlist(access_token, department_id, offset, size, order)
+        if is_success == True and result != None:
+            for i in range(len(result['userlist'])):            
+                write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
+                    (utils.list2string(result['userlist'][i].keys(), 'keys'), utils.list2string(result['userlist'][i].values(), 'values'))  
+                #print write_db #debug only
+                try:
+                    cursor.execute(write_db)
+                    db.commit()
+                except MySQLdb.Warning, w:  
+                    sqlWarning =  "Warning:%s" % str(w)
+                    print sqlWarning
+                except MySQLdb.Error, e:  
+                    sqlError =  "Error:%s" % str(e)
+                    print sqlError
+            break
+        else:
+            logging_message = {'access_token':access_token, 'department_id':department_id, 'offset':offset, 'size':size, 'order':order}
+            logger.error(logging_message)             
     db.close()
     return True
 
@@ -122,6 +149,9 @@ def ding_one_key_store():
         status, class1_result = department.get_sub_dept_id_list(dingapi_timer.access_token, 1)
         if status == True:
             break
+        else:
+            logging_message = {'Function':'get_sub_dept_id_list', 'access_token':access_token, 'department_id':department_id}
+            logger.error(logging_message)             
         if i == 4 and status == False:
             #print 'error' #debug only 
             return -1
@@ -180,10 +210,10 @@ def ding_one_key_store():
     ding_dept_num_sql = "SELECT count(*) FROM dingtalk.dingding_department_list;"
     ding_cursor.execute(ding_dept_num_sql)
     ding_dept_num = ding_cursor.fetchone()
-    print ding_dept_num #debug only
+    print 'The number of departments is %d' % ding_dept_num #debug only
     if ding_dept_num == None:
         return -2
-    group_factor = 25#设定分组单位，必须为整数，目前计划为100或者25
+    group_factor = 50#设定分组单位，必须为整数，目前计划为100或者25
     group_number = int(math.ceil(float(ding_dept_num[0]) / group_factor))
     #print float(ding_dept_num[0]), group_number
     for i in range(group_number):        
