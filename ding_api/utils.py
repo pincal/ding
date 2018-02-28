@@ -8,12 +8,12 @@ import json
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
 
-path_log_file = '/tmp/dingding_test.log'
+path_log_file = '/tmp/DingAPI.log'
 #Windows下会向出错程序所在分区写入日志 | tmp文件夹需要预先手工建立
 
 logger = logging.getLogger('DingAPI')
 file_handler = logging.FileHandler(path_log_file)
-formatter = logging.Formatter('%(asctime)s:%(name)s-->%(levelname)s %(message)s')
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(funcName)s-->%(levelname)s %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 

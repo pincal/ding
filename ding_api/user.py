@@ -5,8 +5,10 @@ from urllib import urlencode
 
 from config import API_ADDR
 from utils import http_get, http_post
+from retrying import retry
 
 
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def get_user(access_token, userid):
     url = 'https://%s/user/get?' % API_ADDR
     args = {
@@ -16,7 +18,8 @@ def get_user(access_token, userid):
     url += urlencode(args)
     return http_get(url)
 
-
+    
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def create_user(access_token, userid, name, department, mobile, email=None,
                           position=None, jobnumber=None, extattr=None, orderInDepts=None,
                           tel=None, workPlace=None, remark=None, isHide=None,
@@ -59,6 +62,7 @@ def create_user(access_token, userid, name, department, mobile, email=None,
     return http_post(url, data)
 
     
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)    
 def create_user_kw(access_token, userid, name, department, mobile, **kw):
     url = 'https://%s/user/create?' % API_ADDR
     args = {
@@ -108,8 +112,9 @@ def create_user_kw(access_token, userid, name, department, mobile, **kw):
        
     #print data #该print为调试接口时用
     # return http_post(url, data)    
-    
-    
+   
+   
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)    
 def update_user(access_token, userid, name, department=None, mobile=None, email=None,
                           position=None, jobnumber=None, extattr=None, orderInDepts=None,
                           tel=None, workPlace=None, remark=None, isHide=None,
@@ -153,8 +158,10 @@ def update_user(access_token, userid, name, department=None, mobile=None, email=
     return http_post(url, data)
 
     
+    
 #kw为需要更新的人的信息，只需要传入需要修改的部分。例如：
 #update_user_kw(access_token, u'135680', u'测试',email=u'test@test.com',position=u'职位3')
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def update_user_kw(access_token, userid, name, **kw):
     url = 'https://%s/user/update?' % API_ADDR
     args = {
@@ -170,7 +177,8 @@ def update_user_kw(access_token, userid, name, **kw):
     #print data #该print为调试接口时用
     return http_post(url, data)
     
-
+    
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def delete_user(access_token, userid):
     url = 'https://%s/user/delete?' % API_ADDR
     args = {
@@ -180,7 +188,8 @@ def delete_user(access_token, userid):
     url += urlencode(args)
     return http_get(url)
 
-
+    
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def delete_user_list(access_token, useridlist):
     url = 'https://%s/user/batchdelete?' % API_ADDR
     args = {
@@ -193,7 +202,8 @@ def delete_user_list(access_token, useridlist):
     }
     return http_post(url, data)
 
-
+    
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def get_department_simple_userlist(access_token, department_id,
                                    offset=None, size=None, order=None):
     url = 'https://%s/user/simplelist?' % API_ADDR
@@ -212,7 +222,8 @@ def get_department_simple_userlist(access_token, department_id,
     url += urlencode(args)
     return http_get(url)
 
-
+    
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)
 def get_department_detail_userlist(access_token, department_id,
                                    offset=None, size=None, order=None):
     url = 'https://%s/user/list?' % API_ADDR
@@ -232,6 +243,7 @@ def get_department_detail_userlist(access_token, department_id,
     return http_get(url)
     
     
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)   
 def get_admin(access_token):
     url = 'https://%s/user/get_admin?' % API_ADDR
     args = {
@@ -241,6 +253,7 @@ def get_admin(access_token):
     return http_get(url)
     
     
+@retry(stop_max_attempt_number=20, wait_exponential_multiplier=500, wait_exponential_max=1000*60*5)    
 def get_org_user_count(access_token, onlyActive=1):
     url = 'https://%s/user/get_org_user_count?' % API_ADDR
     args = {
