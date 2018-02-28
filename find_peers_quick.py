@@ -1,11 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import math
+import logging
 import MySQLdb
+import threadpool
 from treelib import Node, Tree
+from retrying import retry
 
 
+path_log_file = '/tmp/find_peers.log'
+#Windows下会向出错程序所在分区写入日志 | tmp文件夹需要预先手工建立
+logger = logging.getLogger('Find_Peers')
+file_handler = logging.FileHandler(path_log_file)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(funcName)s-->%(levelname)s %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
+
+@retry(stop_max_attempt_number=10, wait_random_min=1, wait_random_max=3)
 def connect_db(address, user, password, database):
     db = MySQLdb.connect(address, user, password, database)
     db.set_character_set('utf8') #修改MySQLdb默认编码
@@ -16,9 +29,15 @@ def connect_db(address, user, password, database):
     return db, cursor
 
 
-
+@retry(stop_max_attempt_number=10, wait_random_min=1, wait_random_max=3)
 def close_db(db):
     db.close()
+    return True
+
+@retry(stop_max_attempt_number=10, wait_random_min=1, wait_random_max=3)
+def commit_db(db, cursor, sql):
+    cursor.execute(sql)
+    db.commit()
     return True
 
 
@@ -379,10 +398,47 @@ def compare_users(oa_db, oa_cursor, ding_db, ding_cursor):
 
 
     
+def compare_users_thread(sequence, group_factor):
+    ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
+    oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'np020')   
+    #oa_user_sql = "SELECT DISTINCT `userid`, `email` FROM personinfo limit %s,%s ;" % (sequence*group_factor, group_factor)
+    oa_user_sql = "SELECT `userid`, `email` FROM personinfo limit %s,%s ;" % (sequence*group_factor, group_factor)
+    print oa_user_sql #debug only
+    oa_cursor.execute(oa_user_sql)
+    oa_result = oa_cursor.fetchall()
+    
+    for i in range(len(oa_result)):
+        if oa_result[i][1] == None or oa_result[i][1] == '':
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
+                        VALUES('%s', '%s', '%s') " % ('-2', oa_result[i][1], oa_result[i][0])
+            commit_db(ding_db, ding_cursor, peer_sql)
+                   
+        ding_sql = "SELECT `userid` FROM dingding_user_detail WHERE `email`='%s'" % oa_result[i][1]
+        ding_cursor.execute(ding_sql)
+        ding_result = ding_cursor.fetchone()
+        if ding_result != None:
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
+                        VALUES('%s', '%s', '%s') " % (ding_result[0], oa_result[i][1], oa_result[i][0])
+            commit_db(ding_db, ding_cursor, peer_sql)
+
+        else:
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
+                        VALUES('%s', '%s', '%s') " % ('-1', oa_result[i][1], oa_result[i][0])
+            commit_db(ding_db, ding_cursor, peer_sql)
+
+    return True
+
+    
+    
+    
+    
+    
+    
+    
 def find_user_peers():
     #连接数据库
     ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'test')  
+    oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'np020')  
     #两侧比较
     compare_users(oa_db, oa_cursor, ding_db, ding_cursor)
     #关闭数据库
@@ -392,11 +448,36 @@ def find_user_peers():
 
     
     
+def find_user_peers_quick():
+    oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'np020')  
+    #oa_user_num_sql = "SELECT count(DISTINCT `userid`) FROM personinfo ;"    
+    oa_user_num_sql = "SELECT count(*) FROM personinfo ;"  
+    oa_cursor.execute(oa_user_num_sql)
+    oa_user_num = oa_cursor.fetchone()
+    print 'The number of user is %d' % oa_user_num[0]
+    
+    user_pool = threadpool.ThreadPool(50)
+    
+    group_factor = 100 #设定分组单位，必须为整数
+    group_number = int(math.ceil(float(oa_user_num[0]) / group_factor))    
+    
+    for i in range(group_number):
+        dict_vars = {'sequence':i, 'group_factor':group_factor}
+        func_vars = [(None, dict_vars)]
+        requests = threadpool.makeRequests(compare_users_thread, func_vars)
+        [user_pool.putRequest(req) for req in requests]
+    user_pool.wait()        
+
+
+
+
+
     
     
 def find_all_peers():
     find_org_peers()
-    find_user_peers()
+    #find_user_peers()
+    find_user_peers_quick()
     
     
     
@@ -410,8 +491,8 @@ def find_all_peers():
 #find_org_peers()
 #find_user_peers()
 #find_all_peers()
-
+#find_user_peers_quick()
 '''遗留问题'''
 #1未作错误处理
 #2方法二中，门户数据库的一个部门，可能匹配到同级别同名的多个部门中的某个不确定的部门
-# 查询对应关系时忽略find_method=2或者matches!=1或者ding_dept_id=-1或者ding_user_id=-1或者-2的项目
+# 查询对应关系时对于组织忽略matches!=1或者ding_dept_id=-1的项目，对于人员忽略ding_user_id=-1或者-2的项目
