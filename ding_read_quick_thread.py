@@ -9,9 +9,10 @@ import MySQLdb
 import threadpool
 import math
 import logging
+from retrying import retry
 
 
-path_log_file = '/tmp/ding_read.log'
+path_log_file = '/tmp/DingRead.log'
 #Windows下会向出错程序所在分区写入日志 | tmp文件夹需要预先手工建立
 
 logger = logging.getLogger('DingRead')
@@ -22,39 +23,26 @@ logger.addHandler(file_handler)
 
 
 
+@retry(stop_max_attempt_number=10, wait_random_min=500, wait_random_max=2000)
 def connect_db(address, user, password, database):
-    for i in range(10):
-        try:
-            db = MySQLdb.connect(address, user, password, database)
-            db.set_character_set('utf8') #修改MySQLdb默认编码
-            cursor = db.cursor()
-            cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
-            cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
-            cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
-        except MySQLdb.Warning, w:  
-            sqlWarning =  "Warning:%s" % str(w)
-            print sqlWarning
-        except MySQLdb.Error, e:  
-            sqlError =  "Error:%s" % str(e)
-            print sqlError
-        else:
-            break
+    db = MySQLdb.connect(address, user, password, database)
+    db.set_character_set('utf8') #修改MySQLdb默认编码
+    cursor = db.cursor()
+    cursor.execute('SET NAMES utf8;') #修改MySQLdb默认编码
+    cursor.execute('SET CHARACTER SET utf8;') #修改MySQLdb默认编码
+    cursor.execute('SET character_set_connection=utf8;') #修改MySQLdb默认编码
     return db, cursor
 
 
-
+@retry(stop_max_attempt_number=10, wait_random_min=500, wait_random_max=2000)
 def close_db(db):
-    for i in range(10):
-        try:
-            db.close()
-        except MySQLdb.Warning, w:  
-            sqlWarning =  "Warning:%s" % str(w)
-            print sqlWarning
-        except MySQLdb.Error, e:  
-            sqlError =  "Error:%s" % str(e)
-            print sqlError
-        else:
-            break            
+    db.close()
+    return True
+
+@retry(stop_max_attempt_number=10, wait_random_min=500, wait_random_max=2000)
+def commit_db(db, cursor, sql):
+    cursor.execute(sql)
+    db.commit()
     return True
 
 
@@ -63,7 +51,7 @@ def close_db(db):
 def store_department_list(access_token, fetch_child=True, parent_id=1):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
     #global result
-    for i in range(5):
+    for i in range(10):
         is_success, result = department.get_department_list(access_token, fetch_child, parent_id)
         #print result #debug only
         if is_success == True:
@@ -72,27 +60,19 @@ def store_department_list(access_token, fetch_child=True, parent_id=1):
                             (utils.list2string(result['department'][i].keys(), 'keys'),
                              utils.list2string(result['department'][i].values(), 'values') )
                 #print ding_read_sql #debug only
-                try:
-                    cursor.execute(ding_read_sql)
-                    db.commit()
-                except MySQLdb.Warning, w:  
-                    sqlWarning =  "Warning:%s" % str(w)
-                    print sqlWarning
-                except MySQLdb.Error, e:  
-                    sqlError =  "Error:%s" % str(e)
-                    print sqlError
+                commit_db(db, cursor, ding_read_sql)
             break
         else:
-            logging_message = {'access_token':access_token, 'fetch_child':fetch_child, 'parent_id':parent_id}
+            logging_message = {'access_token':str(access_token), 'fetch_child':fetch_child, 'parent_id':parent_id}
             logger.error(logging_message)
-    db.close()
+    close_db(db)
     return True
     
     
-    
+
 def store_department_detail(access_token, department_id):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    for i in range(5):
+    for i in range(10):
         is_success, result = department.get_department_detail(access_token, department_id)
         #print result #debug only
         if is_success == True:
@@ -106,20 +86,12 @@ def store_department_detail(access_token, department_id):
                                 (result['id'], result['name'], '0', result['createDeptGroup'], result['autoAddUser'])    
 
             #print ding_read_sql #debug only
-            try:
-                cursor.execute(ding_read_sql)
-                db.commit()
-            except MySQLdb.Warning, w:  
-                sqlWarning =  "Warning:%s" % str(w)
-                print sqlWarning
-            except MySQLdb.Error, e:  
-                sqlError =  "Error:%s" % str(e)
-                print sqlError
+            commit_db(db, cursor, ding_read_sql)
             break
         else:
-            logging_message = {'access_token':access_token, 'department_id':department_id}
+            logging_message = {'access_token':str(access_token), 'department_id':department_id}
             logger.error(logging_message)           
-    db.close()
+    close_db(db)
     return True
 
 
@@ -128,30 +100,45 @@ def store_department_detail(access_token, department_id):
 #确保user_list表没有重复的人员
 def store_user_detail(access_token, department_id, offset=None, size=None, order=None):
     db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
-    for i in range(5):
+    for i in range(10):
         is_success, result = user.get_department_detail_userlist(access_token, department_id, offset, size, order)
         if is_success == True and result != None:
             for i in range(len(result['userlist'])):            
                 write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
                     (utils.list2string(result['userlist'][i].keys(), 'keys'), utils.list2string(result['userlist'][i].values(), 'values'))  
                 #print write_db #debug only
-                try:
-                    cursor.execute(write_db)
-                    db.commit()
-                except MySQLdb.Warning, w:  
-                    sqlWarning =  "Warning:%s" % str(w)
-                    print sqlWarning
-                except MySQLdb.Error, e:  
-                    sqlError =  "Error:%s" % str(e)
-                    print sqlError
+                commit_db(db, cursor, write_db)
             break
         else:
-            logging_message = {'access_token':access_token, 'department_id':department_id, 'offset':offset, 'size':size, 'order':order}
+            logging_message = {'access_token':str(access_token), 'department_id':department_id, 'offset':offset, 'size':size, 'order':order}
             logger.error(logging_message)             
-    db.close()
+    close_db(db)
     return True
 
 
+def store_user_detail_thread(access_token, sequence, group_factor, offset=None, size=None, order=None):
+    db, cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
+    ding_dept_group_sql = "SELECT `id` FROM dingding_department_list limit %s,%s;" % (sequence*group_factor, group_factor)
+    print ding_dept_group_sql #debug only
+    cursor.execute(ding_dept_group_sql)
+    dept_group = cursor.fetchall()
+    #print dept_group #debug only
+    for i in range(len(dept_group)):
+        is_success, result = user.get_department_detail_userlist(access_token, dept_group[i][0], offset, size, order)
+        #print result #debug only
+        if is_success == True and result != None:
+            for i in range(len(result['userlist'])):            
+                write_db = "REPLACE INTO dingding_user_detail(%s) VALUES(%s)" % \
+                    (utils.list2string(result['userlist'][i].keys(), 'keys'), utils.list2string(result['userlist'][i].values(), 'values'))  
+                #print write_db #debug only
+                commit_db(db, cursor, write_db)
+        else:
+            logging_message = {'access_token':access_token, 'sequence':sequence, 'group_factor':group_factor, 'offset':offset, 'size':size, 'order':order}
+            logger.error(logging_message)
+    close_db(db)
+    return True
+
+    
 
 def ding_one_key_store():             
     #获取access_token可以全局使用dingapi_timer.access_token
@@ -224,10 +211,10 @@ def ding_one_key_store():
 
 
 
-    #threadpool多线程获取人员详情
+    #threadpool多线程获取人员详情【每个线程读取一个部门】
     user_pool = threadpool.ThreadPool(50)
         
-    ding_dept_num_sql = "SELECT count(*) FROM dingtalk.dingding_department_list;"
+    ding_dept_num_sql = "SELECT count(*) FROM dingding_department_list;"
     ding_cursor.execute(ding_dept_num_sql)
     ding_dept_num = ding_cursor.fetchone()
     print 'The number of departments is %d' % ding_dept_num #debug only
@@ -237,7 +224,7 @@ def ding_one_key_store():
     group_number = int(math.ceil(float(ding_dept_num[0]) / group_factor))
     #print float(ding_dept_num[0]), group_number
     for i in range(group_number):        
-        ding_dept_group_sql = "SELECT `id` FROM dingtalk.dingding_department_list limit %s,%s;" % (i*group_factor, group_factor)
+        ding_dept_group_sql = "SELECT `id` FROM dingding_department_list limit %s,%s;" % (i*group_factor, group_factor)
         print ding_dept_group_sql #debug only
         ding_cursor.execute(ding_dept_group_sql)
         dept_group = ding_cursor.fetchall()
@@ -246,8 +233,27 @@ def ding_one_key_store():
             func_vars = [(None, dict_vars)]
             requests = threadpool.makeRequests(store_user_detail, func_vars)
             [user_pool.putRequest(req) for req in requests]
-        user_pool.wait()
+    user_pool.wait()
 
+    
+##    #threadpool多线程获取人员详情2【每个线程读取group_factor个部门】
+##    user_pool = threadpool.ThreadPool(50)
+##        
+##    ding_dept_num_sql = "SELECT count(*) FROM dingding_department_list;"
+##    ding_cursor.execute(ding_dept_num_sql)
+##    ding_dept_num = ding_cursor.fetchone()
+##    print 'The number of departments is %d' % ding_dept_num #debug only
+##    if ding_dept_num == None:
+##        return -2
+##    group_factor = 100#设定分组单位，必须为整数，目前计划为100或者25
+##    group_number = int(math.ceil(float(ding_dept_num[0]) / group_factor))
+##    #print float(ding_dept_num[0]), group_number
+##    for i in range(group_number):        
+##        dict_vars = {'access_token':dingapi_timer.access_token, 'sequence':i, 'group_factor':group_factor}
+##        func_vars = [(None, dict_vars)]
+##        requests = threadpool.makeRequests(store_user_detail_thread, func_vars)
+##        [user_pool.putRequest(req) for req in requests]
+##    user_pool.wait()    
      
         
         
