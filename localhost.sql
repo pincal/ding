@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-24 09:03:25
+-- Generation Time: 2018-02-28 08:00:22
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -103,7 +103,7 @@ DROP TABLE IF EXISTS `dingding_department_list`;
 CREATE TABLE `dingding_department_list` (
   `id` varchar(45) NOT NULL,
   `name` varchar(45) NOT NULL,
-  `parentid` int(10) UNSIGNED DEFAULT NULL,
+  `parentid` varchar(45) DEFAULT NULL,
   `createDeptGroup` tinyint(1) DEFAULT NULL,
   `autoAddUser` tinyint(1) DEFAULT NULL,
   `syn_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -211,7 +211,9 @@ ALTER TABLE `dingding_department_list`
 -- Indexes for table `dingding_user_detail`
 --
 ALTER TABLE `dingding_user_detail`
-  ADD PRIMARY KEY (`userid`);
+  ADD PRIMARY KEY (`userid`),
+  ADD KEY `email` (`email`) USING HASH,
+  ADD KEY `department` (`department`) USING HASH;
 
 --
 -- Indexes for table `dingding_user_list`
