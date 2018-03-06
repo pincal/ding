@@ -30,7 +30,7 @@ def create_ding_tree():
 
     ding_tree = Tree()
     
-    sql = "SELECT `id`, `name`, `parentid` FROM dingding_department_detail"
+    sql = "SELECT `id`, `name`, `parentid` FROM dingding_department_list"
     cursor.execute(sql)
     dept_result = cursor.fetchall()
     #print dept_result debug only
@@ -40,7 +40,7 @@ def create_ding_tree():
             #ding_tree.create_node(dept_result[i][1].decode('utf-8'), dept_result[i][0], '0')
             ding_tree.create_node(dept_result[i][1], dept_result[i][0], '0')
         for i in range(len(dept_result)): #修改隶属关系
-            if dept_result[i][0] != '1' : #只要不是实根，就要修改隶属关系【钉钉中实根id为'1'且无上级部门，数据表dingding_department_detail中存储id为'1'的部门上级为'0'】
+            if dept_result[i][0] != '1' : #只要不是实根，就要修改隶属关系【钉钉中实根id为'1'且无上级部门，数据表dingding_department_list中存储id为'1'的部门上级为'0'】
                 if ding_tree.contains(dept_result[i][2]): #判断上级是否存在
                     ding_tree.move_node(dept_result[i][0], dept_result[i][2])
                 else: #没有上级的不修改
@@ -48,7 +48,6 @@ def create_ding_tree():
     #断开数据库
     close_db(db)            
     return ding_tree.subtree('1')  #用于集成本部测试
-
 
 
 def create_oa_tree():
@@ -63,12 +62,12 @@ def create_oa_tree():
     dept_result = cursor.fetchall()
     #print dept_result debug only
     if dept_result != None and len(dept_result) > 0:
-        oa_tree.create_node('##oa_root##', '0') #先创建虚拟根
+        oa_tree.create_node('##oa_root##', '0000') #先创建虚拟根
         for i in range(len(dept_result)): #向虚拟根填充所有组织
             #print dept_result[i][1].decode('utf-8'), dept_result[i][0], dept_result[i][2]
-            oa_tree.create_node(dept_result[i][1], dept_result[i][0], '0')
+            oa_tree.create_node(dept_result[i][1], dept_result[i][0], '0000')
         for i in range(len(dept_result)): #修改隶属关系
-            if dept_result[i][0] != 'XXXX' : #只要不是实根，就要修改隶属关系【OA中'001000'等的组织上级为‘0000’即OA数据库中存在虚根，所以无需做此步骤】
+            if dept_result[i][0] != '0000' : #只要不是实根，就要修改隶属关系【OA中'001000'等的组织上级为‘0000’即OA数据库中存在虚根，所以无需做此步骤】
                 if oa_tree.contains(dept_result[i][2]): #判断上级是否存在
                     oa_tree.move_node(dept_result[i][0], dept_result[i][2])
                 else: #没有上级的不修改
@@ -116,7 +115,7 @@ def create_oa_tree():
 ##        oa_result = oa_cursor.fetchone() #得到oa侧的组织名oa_result[0]
 ##        #print oa_result #debug only
 ##        for j in range(len(ding_depts)):
-##            ding_sql = "SELECT `name` FROM dingding_department_detail WHERE `id`='%s'" % ding_depts[j]
+##            ding_sql = "SELECT `name` FROM dingding_department_list WHERE `id`='%s'" % ding_depts[j]
 ##            #print ding_sql
 ##            ding_cursor.execute(ding_sql)
 ##            ding_result = ding_cursor.fetchone()
@@ -163,6 +162,15 @@ def zero_peers(ding_db, ding_cursor, oa_org_id, oa_org_shortname):
     ding_db.commit()
 
 
+    
+def check_chars(string):
+    if type(string) == str:
+        new_string = string.replace('　','').replace(' ','').replace('（','(').replace('）',')').replace('．','.').replace('中国联通','')
+        #删去全角点、空格和括号，删去半角空格
+        return new_string
+    else:
+        return string
+
 
 def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, level, oa_org_id, oa_hierarchy, ding_hierarchy, operater):
     #参数说明两个数据库cursor，一个数据库连接，两个树，oa侧组织的级别，oa侧组织id，oa所有组织按级别分类的词典，钉钉所有组织按级别分类形成的词典，数据库操作命令
@@ -190,12 +198,12 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
             zero_peers(ding_db, ding_cursor, oa_org_id, oa_result[0])
             return 0
         for i in range(len(ding_hierarchy[level])):
-            ding_sql = "SELECT `name` FROM dingding_department_detail WHERE `id`='%s'" % ding_hierarchy[level][i]
+            ding_sql = "SELECT `name` FROM dingding_department_list WHERE `id`='%s'" % ding_hierarchy[level][i]
             #print ding_sql
             ding_cursor.execute(ding_sql)
             ding_result = ding_cursor.fetchone()
             #print ding_result
-            if ding_result[0] == oa_result[0]:
+            if check_chars(ding_result[0]) == check_chars(oa_result[0]):
                 method_a_counter = method_a_counter + 1
                 if method_a_counter == 1:
                     #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
@@ -226,12 +234,12 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
         #print ding_tree.is_branch(str(ding_parent_id[0])) #debug only
         ding_tree_branch = ding_tree.is_branch(ding_parent_id[0])
         for i in range(len(ding_tree_branch)):
-            ding_sql = "SELECT `name` FROM dingding_department_detail WHERE `id`='%s'" % ding_tree_branch[i]
+            ding_sql = "SELECT `name` FROM dingding_department_list WHERE `id`='%s'" % ding_tree_branch[i]
             #print ding_sql
             ding_cursor.execute(ding_sql)
             ding_result = ding_cursor.fetchone()
             #print ding_result
-            if ding_result[0] == oa_result[0]:
+            if check_chars(ding_result[0]) == check_chars(oa_result[0]):
                 method_b_counter = method_b_counter + 1
                 if method_b_counter == 1:
                     #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
@@ -305,15 +313,15 @@ def find_org_peers():
                 else: #异常情况跳过
                     continue
                 #break #debug only
-##            else: #虚拟根手动设置
-##                #counterB = counterB + 1 #debug only
-##                peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
-##                        `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
-##                        `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '1', '1')" % \
-##                        ('0', ding_tree.get_node('0').tag, '0', oa_tree.get_node('0').tag)
-##                #print peer_sql #debug only
-##                ding_cursor.execute(peer_sql)
-##                ding_db.commit()
+            else: #虚拟根手动设置
+                #counterB = counterB + 1 #debug only
+                peer_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
+                        `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
+                        `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '1', '1')" % \
+                        (ding_tree.root, ding_tree.get_node(ding_tree.root).tag, oa_tree.root, oa_tree.get_node(oa_tree.root).tag)
+                #print peer_sql #debug only
+                ding_cursor.execute(peer_sql)
+                ding_db.commit()
         #break #debug only
     '''集成本部进行测试时进行双井号注释'''        
     #print counterA, counterB #debug only 用于计算循环是否丢掉了oa的元素
