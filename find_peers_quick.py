@@ -456,7 +456,7 @@ def find_user_peers_quick():
     
     user_pool = threadpool.ThreadPool(50)
     
-    group_factor = 100 #设定分组单位，必须为整数
+    group_factor = 2000 #设定分组单位，必须为整数
     group_number = int(math.ceil(float(oa_user_num[0]) / group_factor))    
     
     for i in range(group_number):
@@ -472,46 +472,47 @@ def find_user_peers_quick():
 
 
 
-def compare_orgs_thread(class1_org):
-    ding_tree = create_ding_tree()
-    oa_tree = create_oa_tree()
-    oa_tree_class1 = oa_tree.subtree(class1_org)
-    compare_orgs_thread_method(ding_tree, oa_tree_class1)
-    return True
-    
-
-    
-def compare_orgs_thread_worker(ding_tree, oa_tree_class1):
+def compare_orgs_thread(class1_org, oa_tree_class1, oa_hierarchy_class1, ding_tree, ding_hierarchy):
+    #实际上class1_org, oa_tree_class1, ding_tree没有用到
     ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
     oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'test')
-    check_peers()#todo
     
-    oa_hierarchy_class1 = get_hierarchy(oa_tree_class1)
-    oa_class1_org_sql = "SELECT `shortname` FROM groupinfo WHERE orgid='%s'" %  oa_hierarchy_class1[0][0]
-    oa_cursor.execute(oa_class1_org_sql)
-    oa_class1_org = oa_cursor.fetchone()
-    if oa_class1_org == None or len(oa_class1_org) == 0:
-        return -1
-    for i in range(ding_hierarchy[1]):
-        ding_class1_org_sql = "SELECT `name` FROM dingding_department_list WHERE `id`='%s'" % ding_hierarchy[1][i]
-        ding_cursor.execute(ding_class1_org_sql)
-        ding_class1_org = ding_cursor.fetchone()
-        if ding_class1_org == None or len(ding_class1_org) == 0:
-            return -2
-        method_4_counter = 0
-        if check_chars(oa_class1_org) == check_chars(ding_class1_org):
-            method_4_counter = method_4_counter + 1
-            class1_result_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
-                                `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
-                                `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '4', '%s')" % \
-                                (ding_hierarchy[1][i], ding_class1_org[0], oa_hierarchy_class1[0][0], oa_class1_org[0], method_4_counter)
-            commit_db(class1_result_sql)
-                                
-
-    
-
-
-
+    for oa_class_number in range(len(oa_hierarchy_class1)):
+        for oa_org_number in range(len(oa_hierarchy_class1[oa_class_number])):
+########比较代码块##############################################################################################################
+            oa_class1_org_sql = "SELECT `shortname` FROM groupinfo WHERE orgid='%s'" %  oa_hierarchy_class1[oa_class_number][oa_org_number]
+            #print oa_class1_org_sql #debug only
+            oa_cursor.execute(oa_class1_org_sql)
+            oa_class1_org = oa_cursor.fetchone()
+            #print 'oa_name:', oa_class1_org[0] #debug only
+            if oa_class1_org == None or len(oa_class1_org) == 0:
+                print 'oa_class1_org error' #debug only
+                return -1
+            check_result = check_peers(ding_cursor, oa_class1_org[0])
+            if check_result < 0: #检查是否存在
+                print '%s : check_result=%s' % (oa_class1_org[0], check_result)
+                return -3
+            
+            for i in range(len(ding_hierarchy[oa_class_number+1])):
+                ding_class1_org_sql = "SELECT `name` FROM dingding_department_list WHERE `id`='%s'" % ding_hierarchy[oa_class_number+1][i]
+                #print ding_class1_org_sql#debug only
+                ding_cursor.execute(ding_class1_org_sql)
+                ding_class1_org = ding_cursor.fetchone()
+                #print 'ding_name', ding_class1_org[0]#debug only
+                if ding_class1_org == None or len(ding_class1_org) == 0:
+                    print 'ding_class1_org error' #debug only
+                    return -2
+                method_4_counter = 0
+                if check_chars(oa_class1_org[0]) == check_chars(ding_class1_org[0]):
+                    method_4_counter = method_4_counter + 1
+                    class1_result_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
+                                        `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
+                                        `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '4', '%s')" % \
+                                        (ding_hierarchy[oa_class_number+1][i], ding_class1_org[0], \
+                                         oa_hierarchy_class1[oa_class_number][oa_org_number], oa_class1_org[0], method_4_counter)
+                    print class1_result_sql #debug only
+                    commit_db(ding_db, ding_cursor, class1_result_sql)
+########比较代码块##############################################################################################################
     close_db(oa_db)
     close_db(ding_db)
     return True
@@ -521,16 +522,26 @@ def compare_orgs_thread_worker(ding_tree, oa_tree_class1):
 def find_org_peers_quick():
     oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'test')  
     
-    oa_org_pool = threadpool.ThreadPool(20)
-    oa_class1_sql = "SELECT `orgid` FROM groupinfo WHERE parentorgid='0000'"
+    oa_org_pool = threadpool.ThreadPool(10)
+    oa_class1_sql = "SELECT `orgid` FROM groupinfo WHERE `parentorgid`='0000'"
     oa_cursor.execute(oa_class1_sql)
     oa_class1_result = oa_cursor.fetchall()
+
+    ding_tree = create_ding_tree()
+    oa_tree = create_oa_tree()
+    
+    ding_hierarchy = get_hierarchy(ding_tree)
+
+   
     for i in range(len(oa_class1_result)):
-        dict_vars = {'class1_org':oa_class1_result[i][0]}
+        oa_tree_class1 = oa_tree.subtree(oa_class1_result[i][0])
+        oa_hierarchy_class1 = get_hierarchy(oa_tree_class1)
+        dict_vars = {'class1_org':oa_class1_result[i][0],'oa_tree_class1':oa_tree_class1, \
+                     'oa_hierarchy_class1':oa_hierarchy_class1, 'ding_tree':ding_tree, 'ding_hierarchy':ding_hierarchy}
         func_vars = [(None, dict_vars)]
         requests = threadpool.makeRequests(compare_orgs_thread, func_vars)
         [oa_org_pool.putRequest(req) for req in requests]
-    user_pool.wait() 
+    oa_org_pool.wait() 
     close_db(oa_db)
     return True
         
@@ -556,6 +567,7 @@ def find_all_peers():
 #find_user_peers()
 #find_all_peers()
 #find_user_peers_quick()
+#find_org_peers_quick()
 '''遗留问题'''
 #1未作错误处理
 #2方法二中，门户数据库的一个部门，可能匹配到同级别同名的多个部门中的某个不确定的部门
