@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: 2018-02-28 08:00:22
+-- Generation Time: 2018-03-14 03:44:15
 -- 服务器版本： 5.7.17-log
 -- PHP Version: 5.6.30
 
@@ -27,6 +27,8 @@ USE `dingtalk`;
 
 --
 -- 表的结构 `ding_oa_department`
+--
+-- 创建时间： 2018-03-14 03:41:02
 --
 
 DROP TABLE IF EXISTS `ding_oa_department`;
@@ -52,6 +54,9 @@ CREATE TABLE `ding_oa_department` (
 --
 -- 表的结构 `ding_oa_user`
 --
+-- 创建时间： 2018-03-14 03:38:28
+-- 最后更新： 2018-03-14 01:13:40
+--
 
 DROP TABLE IF EXISTS `ding_oa_user`;
 CREATE TABLE `ding_oa_user` (
@@ -61,7 +66,9 @@ CREATE TABLE `ding_oa_user` (
   `oa_user_id` varchar(50) NOT NULL COMMENT 'oa中为字符串',
   `oa_user_update` tinyint(4) NOT NULL DEFAULT '0',
   `ding_user_update` tinyint(4) NOT NULL DEFAULT '0',
-  `status` tinyint(4) NOT NULL DEFAULT '0',
+  `syn_status` tinyint(4) NOT NULL DEFAULT '0',
+  `find_method` tinyint(4) NOT NULL DEFAULT '0',
+  `matches` tinyint(4) NOT NULL DEFAULT '0',
   `oa_update_time` datetime DEFAULT NULL,
   `ding_update_time` datetime DEFAULT NULL,
   `last_update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -71,6 +78,9 @@ CREATE TABLE `ding_oa_user` (
 
 --
 -- 表的结构 `dingding_department_detail`
+--
+-- 创建时间： 2018-03-12 07:29:46
+-- 最后更新： 2018-03-14 01:12:07
 --
 
 DROP TABLE IF EXISTS `dingding_department_detail`;
@@ -98,6 +108,8 @@ CREATE TABLE `dingding_department_detail` (
 --
 -- 表的结构 `dingding_department_list`
 --
+-- 创建时间： 2018-03-12 07:29:46
+--
 
 DROP TABLE IF EXISTS `dingding_department_list`;
 CREATE TABLE `dingding_department_list` (
@@ -113,6 +125,9 @@ CREATE TABLE `dingding_department_list` (
 
 --
 -- 表的结构 `dingding_user_detail`
+--
+-- 创建时间： 2018-03-12 07:29:46
+-- 最后更新： 2018-03-14 01:12:27
 --
 
 DROP TABLE IF EXISTS `dingding_user_detail`;
@@ -153,6 +168,8 @@ CREATE TABLE `dingding_user_detail` (
 --
 -- 表的结构 `dingding_user_list`
 --
+-- 创建时间： 2018-03-12 07:29:46
+--
 
 DROP TABLE IF EXISTS `dingding_user_list`;
 CREATE TABLE `dingding_user_list` (
@@ -165,6 +182,8 @@ CREATE TABLE `dingding_user_list` (
 
 --
 -- 表的结构 `syn_log`
+--
+-- 创建时间： 2018-03-12 07:29:46
 --
 
 DROP TABLE IF EXISTS `syn_log`;
@@ -186,14 +205,25 @@ CREATE TABLE `syn_log` (
 --
 ALTER TABLE `ding_oa_department`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `oa_org_id_UNIQUE` (`oa_org_id`);
+  ADD UNIQUE KEY `oa_org_id_UNIQUE` (`oa_org_id`),
+  ADD KEY `ding_dept_id` (`ding_dept_id`),
+  ADD KEY `oa_org_id` (`oa_org_id`),
+  ADD KEY `find_method` (`find_method`),
+  ADD KEY `matches` (`matches`),
+  ADD KEY `ding_dept_name` (`ding_dept_name`),
+  ADD KEY `oa_org_shortname` (`oa_org_shortname`);
 
 --
 -- Indexes for table `ding_oa_user`
 --
 ALTER TABLE `ding_oa_user`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `oa_user_id_UNIQUE` (`oa_user_id`);
+  ADD UNIQUE KEY `oa_user_id_UNIQUE` (`oa_user_id`),
+  ADD KEY `ding_user_id` (`ding_user_id`),
+  ADD KEY `email` (`email`),
+  ADD KEY `oa_user_id` (`oa_user_id`),
+  ADD KEY `find_method` (`find_method`),
+  ADD KEY `matches` (`matches`);
 
 --
 -- Indexes for table `dingding_department_detail`

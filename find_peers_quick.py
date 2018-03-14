@@ -201,8 +201,7 @@ def check_chars(string):
         return new_string
     else:
         return string
-    
-    
+
     
 
 def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, level, oa_org_id, oa_hierarchy, ding_hierarchy, operater):
@@ -210,8 +209,8 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
     #需要防备ding_hierarchy[level]不存在！
     #返回值说明：-1错误，非负为匹配次数
     #global oa_result, oa_parent_id #debug only
-    method_a_counter = 0
-    method_b_counter = 0
+    method_2_counter = 0
+    method_3_counter = 0
     oa_parent_id = oa_tree.parent(oa_org_id).identifier
     if oa_parent_id == None:
         return -1 #树中没有上级节点【不应该出现这个错误，因为树中除了根节点都有上级节点，而根节点不会执行这个函数】
@@ -237,28 +236,28 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
             ding_result = ding_cursor.fetchone()
             #print ding_result
             if check_chars(ding_result[0]) == check_chars(oa_result[0]):
-                method_a_counter = method_a_counter + 1
-                if method_a_counter == 1:
+                method_2_counter = method_2_counter + 1
+                if method_2_counter == 1:
                     #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
                     peer_sql = "%s INTO ding_oa_department(`ding_dept_id`, \
                                 `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
                                 `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '2', '%s')" % \
                                 (operater, ding_hierarchy[level][i], ding_result[0], \
-                                oa_org_id, oa_result[0], method_a_counter)
+                                oa_org_id, oa_result[0], method_2_counter)
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
-                elif method_a_counter > 1 and method_a_counter < 5:
+                elif method_2_counter > 1 and method_2_counter < 5:
                     peer_sql = "UPDATE ding_oa_department SET `matches`='%s' WHERE `oa_org_id`='%s'" % \
-                                (method_a_counter, oa_org_id)
+                                (method_2_counter, oa_org_id)
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
                 else:
                     break
-        if method_a_counter == 0:
+        if method_2_counter == 0:
             zero_peers(ding_db, ding_cursor, oa_org_id, oa_result[0])
-        return method_a_counter
+        return method_2_counter
     else: #能查到oa上级部门对应的钉钉部门则缩小查找范围
         #print ding_parent_id[0] #debug only
         oa_sql = "SELECT `shortname` from groupinfo WHERE `orgid`='%s'" % oa_org_id
@@ -275,28 +274,28 @@ def find_peers_at_level(oa_cursor, ding_cursor, ding_db, oa_tree, ding_tree, lev
             ding_result = ding_cursor.fetchone()
             #print ding_result
             if check_chars(ding_result[0]) == check_chars(oa_result[0]):
-                method_b_counter = method_b_counter + 1
-                if method_b_counter == 1:
+                method_3_counter = method_3_counter + 1
+                if method_3_counter == 1:
                     #print 'ding_depts:%s,%s== oa_orgs:%s,%s ' % (ding_hierarchy[level][i], ding_result[0], oa_org_id, oa_result[0] #debug only
                     peer_sql = "%s INTO ding_oa_department(`ding_dept_id`, \
                                 `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
                                 `find_method`,`matches`) VALUES('%s', '%s', '%s', '%s', '3', '%s')" % \
                                 (operater, ding_tree_branch[i], ding_result[0], \
-                                oa_org_id, oa_result[0], method_b_counter)
+                                oa_org_id, oa_result[0], method_3_counter)
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
-                elif method_b_counter > 1 and method_b_counter < 5:
+                elif method_3_counter > 1 and method_3_counter < 5:
                     peer_sql = "UPDATE ding_oa_department SET `matches`='%s' WHERE `oa_org_id`='%s'" % \
-                                (method_b_counter, oa_org_id)
+                                (method_3_counter, oa_org_id)
                     #print peer_sql #debug only
                     ding_cursor.execute(peer_sql)
                     ding_db.commit()
                 else:
                     break
-        if method_b_counter == 0:
+        if method_3_counter == 0:
             zero_peers(ding_db, ding_cursor, oa_org_id, oa_result[0])
-        return method_b_counter
+        return method_3_counter
 
 
 
@@ -374,10 +373,12 @@ def compare_users(oa_db, oa_cursor, ding_db, ding_cursor):
     oa_sql = "SELECT `userid`, `email` FROM personinfo"
     oa_cursor.execute(oa_sql)
     oa_result = oa_cursor.fetchall()
+    if oa_result == None or len(oa_result) == 0:
+        return -1
     for i in range(len(oa_result)):
         if oa_result[i][1] == None or oa_result[i][1] == '':
-            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % ('-2', oa_result[i][1], oa_result[i][0])
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`, `find_method`, `matches`) \
+                        VALUES('%s', '%s', '%s', '%s', '%s') " % ('-2', oa_result[i][1], oa_result[i][0], '-2', '-2')
             ding_cursor.execute(peer_sql)
             ding_db.commit()
             continue
@@ -386,13 +387,13 @@ def compare_users(oa_db, oa_cursor, ding_db, ding_cursor):
         ding_cursor.execute(ding_sql)
         ding_result = ding_cursor.fetchone()
         if ding_result != None:
-            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % (ding_result[0], oa_result[i][1], oa_result[i][0])
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`, `find_method`, `matches`) \
+                        VALUES('%s', '%s', '%s', '%s', '%s') " % (ding_result[0], oa_result[i][1], oa_result[i][0], '1', len(ding_result))
             ding_cursor.execute(peer_sql)
             ding_db.commit()
         else:
-            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % ('-1', oa_result[i][1], oa_result[i][0])
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`, `find_method`, `matches`) \
+                        VALUES('%s', '%s', '%s', '%s', '%s') " % ('-1', oa_result[i][1], oa_result[i][0], '-1', '-1')
             ding_cursor.execute(peer_sql)
             ding_db.commit()
     return True
@@ -404,27 +405,27 @@ def compare_users_thread(sequence, group_factor):
     oa_db, oa_cursor = connect_db('localhost', 'root', 'yoyoball', 'test')   
     #oa_user_sql = "SELECT DISTINCT `userid`, `email` FROM personinfo limit %s,%s ;" % (sequence*group_factor, group_factor)
     oa_user_sql = "SELECT `userid`, `email` FROM personinfo limit %s,%s ;" % (sequence*group_factor, group_factor)
-    print oa_user_sql #debug only
+    #print oa_user_sql #debug only
     oa_cursor.execute(oa_user_sql)
     oa_result = oa_cursor.fetchall()
     
     for i in range(len(oa_result)):
-        if oa_result[i][1] == None or oa_result[i][1] == '':
-            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % ('-2', oa_result[i][1], oa_result[i][0])
+        if oa_result[i][1] == None or oa_result[i][1] == '': #如果查不到邮箱标记-2
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`, `find_method`, `matches`) \
+                        VALUES('%s', '%s', '%s', '%s', '%s') " % ('-2', oa_result[i][1], oa_result[i][0], '-2', '-2')
             commit_db(ding_db, ding_cursor, peer_sql)
                    
         ding_sql = "SELECT `userid` FROM dingding_user_detail WHERE `email`='%s'" % oa_result[i][1]
         ding_cursor.execute(ding_sql)
         ding_result = ding_cursor.fetchone()
-        if ding_result != None:
-            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % (ding_result[0], oa_result[i][1], oa_result[i][0])
+        if ding_result != None: #查到对应关系正常写入
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`, `find_method`, `matches`) \
+                        VALUES('%s', '%s', '%s', '%s', '%s') " % (ding_result[0], oa_result[i][1], oa_result[i][0], '1', len(ding_result))
             commit_db(ding_db, ding_cursor, peer_sql)
 
-        else:
-            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`) \
-                        VALUES('%s', '%s', '%s') " % ('-1', oa_result[i][1], oa_result[i][0])
+        else: #查不到钉钉侧对应关系标记-1
+            peer_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, `oa_user_id`, `find_method`, `matches`) \
+                        VALUES('%s', '%s', '%s', '%s', '%s') " % ('-1', oa_result[i][1], oa_result[i][0], '-1', '-1')
             commit_db(ding_db, ding_cursor, peer_sql)
     close_db(ding_db)
     close_db(oa_db)
@@ -491,8 +492,8 @@ def compare_orgs_thread(class1_org, oa_tree_class1, oa_hierarchy_class1, ding_tr
             check_result = check_peers(ding_cursor, oa_class1_org[0])
             if check_result < 0: #检查是否存在
                 print '%s : check_result=%s' % (oa_class1_org[0], check_result)
-                return -3
-            
+                return -2
+            method_4_counter = 0
             for i in range(len(ding_hierarchy[oa_class_number+1])):
                 ding_class1_org_sql = "SELECT `name` FROM dingding_department_list WHERE `id`='%s'" % ding_hierarchy[oa_class_number+1][i]
                 #print ding_class1_org_sql#debug only
@@ -501,8 +502,7 @@ def compare_orgs_thread(class1_org, oa_tree_class1, oa_hierarchy_class1, ding_tr
                 #print 'ding_name', ding_class1_org[0]#debug only
                 if ding_class1_org == None or len(ding_class1_org) == 0:
                     print 'ding_class1_org error' #debug only
-                    return -2
-                method_4_counter = 0
+                    return -3
                 if check_chars(oa_class1_org[0]) == check_chars(ding_class1_org[0]):
                     method_4_counter = method_4_counter + 1
                     class1_result_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
@@ -546,29 +546,116 @@ def find_org_peers_quick():
     return True
         
 
+
+def store_ding_unmatched_departments():
+    ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
+    ding_all_dept_sql = "SELECT `id`, `name` FROM dingding_department_list"
+    ding_cursor.execute(ding_all_dept_sql)
+    ding_all_dept = ding_cursor.fetchall()
+    if ding_all_dept == None or len(ding_all_dept) == 0:
+        print 'get dingding all departments error'
+        return -1
+    for i in range(len(ding_all_dept)):
+        if ding_all_dept[i][0] == '1':
+            continue #不检查钉钉根的对应关系
+        peers_sql = "SELECT `id` FROM ding_oa_department WHERE `ding_dept_id`='%s'" % ding_all_dept[i][0]
+        ding_cursor.execute(peers_sql)
+        peers = ding_cursor.fetchone()
+        if peers == None or len(peers) == 0: #对于钉钉上存在但是找不到OA侧对应组织的项目进行填充【由于oa_org_id有唯一约束，所以填充ding_dept_id的负值】
+            write_ding_unmatched_dept_sql = "REPLACE INTO ding_oa_department(`ding_dept_id`, \
+                                            `ding_dept_name`, `oa_org_id`, `oa_org_shortname`, \
+                                            `find_method`,`matches`) VALUES('%s', '%s', '-%s', '-1', '-1', '-1')" % \
+                                            (ding_all_dept[i][0], ding_all_dept[i][1], ding_all_dept[i][0])
+            ding_cursor.execute(write_ding_unmatched_dept_sql)
+            ding_db.commit()
+        else: #存在对应关系跳过
+            continue
+    close_db(ding_db)
+    return True
+
+    
+
+def store_ding_unmatched_users():
+    ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')
+    ding_all_user_sql = "SELECT `userid`, `name` FROM dingding_user_detail"
+    ding_cursor.execute(ding_all_user_sql)
+    ding_all_user = ding_cursor.fetchall()
+    if ding_all_user == None or len(ding_all_user) == 0:
+        print 'get dingding all user error'
+        return -1
+    for i in range(len(ding_all_user)):
+        peers_sql = "SELECT `id` FROM ding_oa_user WHERE `ding_user_id`='%s'" % ding_all_user[i][0]
+        ding_cursor.execute(peers_sql)
+        peers = ding_cursor.fetchone()
+        if peers == None or len(peers) == 0: #对于钉钉上存在但是找不到OA侧对应人员的项目进行填充【由于oa_user_id有唯一约束，所以填充ding_user_id的负值】
+            write_ding_unmatched_user_sql = "REPLACE INTO ding_oa_user(`ding_user_id`, `email`, \
+                                            `oa_user_id`, `find_method`, `matches`) \
+                                            VALUES('%s', '%s', '-%s', '-3', '-3')" % \
+                                            (ding_all_user[i][0], ding_all_user[i][1], ding_all_user[i][0])
+            #print write_ding_unmatched_user_sql #debug only
+            ding_cursor.execute(write_ding_unmatched_user_sql)
+            ding_db.commit()
+        else: #存在对应关系跳过
+            continue
+    close_db(ding_db)    
+    return True
+    
+    
+
+def clear_all_auto_org_peers():
+    ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')    
+    clear_all_auto_peers_sql = "DELETE FROM ding_oa_department WHERE find_method!='127'" #find_method=127时为手工设置的对应关系
+    ding_cursor.execute(clear_all_auto_peers_sql)
+    ding_db.commit()
+    close_db(ding_db)
+    return True
+    
+    
+
+def clear_all_user_peers():
+    ding_db, ding_cursor = connect_db('localhost', 'root', 'yoyoball', 'dingtalk')    
+    clear_all_auto_peers_sql = "DELETE FROM ding_oa_user"
+    ding_cursor.execute(clear_all_auto_peers_sql)
+    ding_db.commit()
+    close_db(ding_db)
+    return True
+
     
     
 def find_all_peers():
     find_org_peers()
     #find_user_peers()
     find_user_peers_quick()
+    store_ding_unmatched_departments()
+    store_ding_unmatched_users()
     return True
     
     
     
 '''测试部分'''
+#注意：数据库中oa_org_id有唯一约束！
 
 #展示树形图  debug only
 #dingtree=create_ding_tree()
 #oatree=create_oa_tree()
 
 #查找组织对应关系【对外接口】
-#find_org_peers()
-#find_user_peers()
-#find_all_peers()
-#find_user_peers_quick()
-#find_org_peers_quick()
+#find_all_peers() #一键获得组织和人员对应关系
+
+#find_org_peers() #单线程获取组织对应关系
+#find_user_peers() #单线程获取人员对应关系
+
+#find_user_peers_quick() #多线程获取人员对应关系
+#find_org_peers_quick() #多线程获取组织对应关系【速度更慢】
+
+#store_ding_unmatched_departments() #把钉钉侧存在但是OA上找不到对应关系的组织标记【find_method=-1推荐】【matches=-1亦可】
+#store_ding_unmatched_users() #把钉钉侧存在但是OA上找不到对应关系的人员标记【find_method=-3推荐】【matches=-3亦可】
+#clear_all_auto_org_peers() #删除所有自动生成的组织对应关系
+#clear_all_user_peers() #删除所有人员对应关系
 '''遗留问题'''
 #1未作错误处理
 #2方法二中，门户数据库的一个部门，可能匹配到同级别同名的多个部门中的某个不确定的部门
-# 查询对应关系时对于组织忽略matches!=1或者ding_dept_id=-1的项目，对于人员忽略ding_user_id=-1或者-2的项目
+
+#查询对应关系时
+#对于组织忽略matches!=1的项目【正常应该是一一映射，所以匹配计数器为1】
+#对于人员忽略ding_user_id=-1【查不到对应关系】或者ding_user_id=-2【OA数据库人员没有邮箱】的项目
